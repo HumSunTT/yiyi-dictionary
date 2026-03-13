@@ -218,16 +218,16 @@ async function handleAddToVocabulary() {
 }
 
 .input-card :deep(.n-input) {
-  background-color: #f8fafc;
+  border: 1px solid #374151;
   border-radius: 8px;
 }
 
 .input-card :deep(.n-input:hover) {
-  background-color: #f1f5f9;
+  border-color: #4b5563;
 }
 
 .input-card :deep(.n-input:focus-within) {
-  background-color: #fff;
+  border-color: #6366f1;
   box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
 }
 

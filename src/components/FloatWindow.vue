@@ -200,7 +200,7 @@ function handleCopy() {
   padding: 8px 10px;
   border-radius: 6px;
   margin-bottom: 8px;
-  border-left: 2px solid #18a058;
+  border-left: 2px solid #8b5cf6;
 }
 
 .example-item p {
@@ -209,8 +209,8 @@ function handleCopy() {
 }
 
 .example-item :deep(.highlight) {
-  background: linear-gradient(135deg, #fff3cd, #ffeaa7);
-  color: #856404;
+  background: #fef3c7;
+  color: #92400e;
   padding: 1px 3px;
   border-radius: 3px;
   font-weight: 600;
@@ -232,7 +232,7 @@ function handleCopy() {
   font-size: 15px;
   line-height: 1.7;
   padding: 10px;
-  background: linear-gradient(135deg, #e8f5e9, #f3e5f5);
+  background: #f5f3ff;
   border-radius: 8px;
 }
 

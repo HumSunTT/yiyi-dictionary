@@ -1,6 +1,6 @@
-/* 全局样式 - 支持明暗主题 */
+/* 全局样式 */
 :root {
-  --primary-color: #18a058;
+  --primary-color: #6366f1;
   --bg-color: #ffffff;
   --text-color: #333333;
 }

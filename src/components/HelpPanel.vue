@@ -91,7 +91,7 @@ import { NCollapse, NCollapseItem } from 'naive-ui'
 }
 
 .help-content a {
-  color: #18a058;
+  color: #6366f1;
 }
 
 .shortcut-table {
