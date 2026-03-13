@@ -181,7 +181,7 @@ async function handleAddToVocabulary() {
 .logo-icon {
   width: 28px;
   height: 28px;
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  background: #6366f1;
   border-radius: 6px;
   display: flex;
   align-items: center;
@@ -217,6 +217,20 @@ async function handleAddToVocabulary() {
   width: 100%;
 }
 
+.input-card :deep(.n-input) {
+  background-color: #f8fafc;
+  border-radius: 8px;
+}
+
+.input-card :deep(.n-input:hover) {
+  background-color: #f1f5f9;
+}
+
+.input-card :deep(.n-input:focus-within) {
+  background-color: #fff;
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+}
+
 .input-actions {
   display: flex;
   justify-content: space-between;
@@ -230,12 +244,12 @@ async function handleAddToVocabulary() {
 }
 
 .input-actions .n-button {
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  background: #6366f1;
   border: none;
 }
 
 .input-actions .n-button:hover {
-  background: linear-gradient(135deg, #4f46e5, #7c3aed);
+  background: #4f46e5;
 }
 
 .result-card {

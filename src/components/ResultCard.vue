@@ -315,7 +315,7 @@ function handleCopy() {
   font-size: 14px;
   font-weight: 700;
   color: #fff;
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  background: #6366f1;
   padding: 6px 12px;
   border-radius: 6px;
   margin-bottom: 12px;
@@ -374,7 +374,7 @@ function handleCopy() {
 
 .ancient-defs :deep(.num) {
   display: inline-block;
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  background: #6366f1;
   color: #fff;
   width: 20px;
   height: 20px;
@@ -473,7 +473,7 @@ function handleCopy() {
 
 .kangxi-content :deep(.kangxi-sep) {
   display: inline-block;
-  background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+  background: #dbeafe;
   color: #1e40af;
   padding: 1px 6px;
   border-radius: 4px;
@@ -489,7 +489,7 @@ function handleCopy() {
 
 .kangxi-content :deep(.num) {
   display: inline-block;
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  background: #6366f1;
   color: #fff;
   width: 18px;
   height: 18px;
@@ -539,7 +539,7 @@ function handleCopy() {
 }
 
 .pos {
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  background: #6366f1;
   color: #fff;
   padding: 2px 8px;
   border-radius: 4px;
