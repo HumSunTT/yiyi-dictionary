@@ -819,8 +819,8 @@ impl Database {
         dictionary_results.sort_by(|a, b| {
             fn source_priority(source: &Option<String>) -> u8 {
                 match source.as_deref() {
-                    Some("古汉语常用字字典") => 0,
-                    Some("古汉语词典") => 1,
+                    Some("古汉语词典") => 0,
+                    Some("古汉语常用字字典") => 1,
                     Some("康熙字典") => 2,
                     _ => 3,
                 }
