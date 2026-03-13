@@ -1,0 +1,47 @@
+{
+  "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
+  "productName": "易译",
+  "version": "0.1.0",
+  "identifier": "com.yi-yi.app",
+  "build": {
+    "frontendDist": "../dist",
+    "devUrl": "http://localhost:1420",
+    "beforeDevCommand": "npm run dev",
+    "beforeBuildCommand": "npm run build"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "易译 - 划词翻译助手",
+        "width": 420,
+        "height": 560,
+        "minWidth": 360,
+        "minHeight": 400,
+        "resizable": true,
+        "fullscreen": false,
+        "center": true,
+        "decorations": true
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self' http://localhost:*; connect-src 'self' https://api.deepseek.com http://localhost:*; script-src 'self' 'unsafe-inline' 'unsafe-eval' http://localhost:*; style-src 'self' 'unsafe-inline' http://localhost:*; img-src 'self' data: http://localhost:*; font-src 'self' http://localhost:*"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "resources": [
+      "dict_data.db"
+    ],
+    "category": "Utility",
+    "shortDescription": "古文/英语划词翻译助手",
+"longDescription": "一款轻量级桌面翻译工具，支持古文和英语的划词翻译，内置离线词库，联网时可使用AI增强翻译"
+  }
+}

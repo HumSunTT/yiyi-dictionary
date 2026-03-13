@@ -1,0 +1,36 @@
+[package]
+name = "yi-yi"
+version = "0.1.0"
+description = "古文/英语划词翻译助手"
+authors = ["小桃"]
+license = "MIT"
+repository = ""
+edition = "2021"
+rust-version = "1.77.2"
+
+[lib]
+name = "yi_yi_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2.5.6", features = [] }
+
+[dependencies]
+serde_json = "1.0"
+serde = { version = "1.0", features = ["derive"] }
+log = "0.4"
+tauri = { version = "2.10.3", features = [] }
+tauri-plugin-log = "2"
+tauri-plugin-clipboard-manager = "2"
+tauri-plugin-store = "2"
+
+# 数据库
+rusqlite = { version = "0.32", features = ["bundled"] }
+
+# HTTP 客户端（用于调用 DeepSeek API）
+reqwest = { version = "0.12", features = ["json"] }
+tokio = { version = "1", features = ["full"] }
+
+# 错误处理
+thiserror = "1.0"
+anyhow = "1.0"
