@@ -5,11 +5,24 @@
         <span class="logo-icon">易</span>
         <span class="logo-text">易译</span>
       </div>
-      <n-button quaternary circle @click="toggleTheme">
-        <template #icon>
-          <n-icon :component="themeIcon" />
-        </template>
-      </n-button>
+      <div class="header-actions">
+        <n-button quaternary size="small" @click="showHistory = true">
+          <template #icon><n-icon :component="TimeOutline" /></template>
+          历史
+        </n-button>
+        <n-button quaternary size="small" @click="showVocabulary = true">
+          <template #icon><n-icon :component="StarOutline" /></template>
+          生词本
+        </n-button>
+        <n-button quaternary size="small" @click="showSettings = true">
+          <template #icon><n-icon :component="SettingsOutline" /></template>
+          设置
+        </n-button>
+        <n-button quaternary size="small" @click="showHelp = true">
+          <template #icon><n-icon :component="HelpOutline" /></template>
+          帮助
+        </n-button>
+      </div>
     </n-layout-header>
 
     <n-layout-content class="content">
@@ -43,25 +56,6 @@
       <!-- 空状态 -->
       <n-empty v-else-if="!dictionaryStore.loading" description="输入文字开始翻译" class="empty-state" />
     </n-layout-content>
-
-    <n-layout-footer class="footer" bordered>
-      <n-button quaternary @click="showHistory = true">
-        <template #icon><n-icon :component="TimeOutline" /></template>
-        历史
-      </n-button>
-      <n-button quaternary @click="showVocabulary = true">
-        <template #icon><n-icon :component="StarOutline" /></template>
-        生词本
-      </n-button>
-      <n-button quaternary @click="showHelp = true">
-        <template #icon><n-icon :component="HelpOutline" /></template>
-        帮助
-      </n-button>
-      <n-button quaternary @click="showSettings = true">
-        <template #icon><n-icon :component="SettingsOutline" /></template>
-        设置
-      </n-button>
-    </n-layout-footer>
   </n-layout>
 
   <!-- 抽屉 -->
@@ -91,24 +85,22 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref } from 'vue'
 import {
-  NLayout, NLayoutHeader, NLayoutContent, NLayoutFooter,
+  NLayout, NLayoutHeader, NLayoutContent,
   NCard, NInput, NButton, NSelect, NIcon, NDrawer, NDrawerContent, NEmpty, useMessage
 } from 'naive-ui'
-import { TimeOutline, StarOutline, SettingsOutline, HelpOutline, SunnyOutline, MoonOutline } from '@vicons/ionicons5'
+import { TimeOutline, StarOutline, SettingsOutline, HelpOutline } from '@vicons/ionicons5'
 import ResultCard from './ResultCard.vue'
 import HistoryPanel from './HistoryPanel.vue'
 import VocabularyPanel from './VocabularyPanel.vue'
 import SettingsPanel from './SettingsPanel.vue'
 import HelpPanel from './HelpPanel.vue'
 import { useDictionaryStore } from '../stores/dictionary'
-import { useSettingsStore } from '../stores/settings'
 import api from '../stores/api'
 import type { DictionaryResult, TranslationResult } from '../types'
 
 const dictionaryStore = useDictionaryStore()
-const settingsStore = useSettingsStore()
 const message = useMessage()
 
 const emit = defineEmits<{
@@ -116,7 +108,7 @@ const emit = defineEmits<{
 }>()
 
 const inputText = ref('')
-const sourceLang = ref('auto')
+const sourceLang = ref('ancient')
 const result = ref<DictionaryResult | TranslationResult | null>(null)
 
 const showHistory = ref(false)
@@ -125,19 +117,10 @@ const showSettings = ref(false)
 const showHelp = ref(false)
 
 const langOptions = [
-  { label: '自动检测', value: 'auto' },
   { label: '古文', value: 'ancient' },
   { label: '英文', value: 'english' },
   { label: '中文', value: 'chinese' }
 ]
-
-const themeIcon = computed(() => {
-  return settingsStore.theme === 'dark' ? SunnyOutline : MoonOutline
-})
-
-function toggleTheme() {
-  settingsStore.toggleTheme()
-}
 
 function handleEnterKey(event: KeyboardEvent) {
   if (event.shiftKey) return
@@ -149,17 +132,11 @@ async function handleTranslate() {
   if (!inputText.value.trim()) return
   
   try {
-    if (sourceLang.value === 'auto') {
-      // 智能模式：先查词库，再翻译
-      result.value = await dictionaryStore.smartQuery(inputText.value)
+    const dictResult = await dictionaryStore.queryWord(inputText.value, sourceLang.value as 'ancient' | 'english' | 'chinese')
+    if (dictResult) {
+      result.value = dictResult
     } else {
-      // 指定语言模式
-      const dictResult = await dictionaryStore.queryWord(inputText.value, sourceLang.value as 'ancient' | 'english' | 'auto')
-      if (dictResult) {
-        result.value = dictResult
-      } else {
-        result.value = await dictionaryStore.translateText(inputText.value, sourceLang.value)
-      }
+      result.value = await dictionaryStore.translateText(inputText.value, sourceLang.value)
     }
   } catch (error: any) {
     message.error(error.message || '翻译失败')
@@ -201,7 +178,8 @@ async function handleAddToVocabulary() {
   justify-content: space-between;
   align-items: center;
   padding: 8px 16px;
-  background-color: var(--n-color);
+  background-color: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
 .logo {
@@ -213,7 +191,7 @@ async function handleAddToVocabulary() {
 .logo-icon {
   width: 28px;
   height: 28px;
-  background: linear-gradient(135deg, #18a058, #36d399);
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
   border-radius: 6px;
   display: flex;
   align-items: center;
@@ -226,19 +204,26 @@ async function handleAddToVocabulary() {
 .logo-text {
   font-size: 18px;
   font-weight: 600;
-  color: #333;
+  color: #1f2937;
+}
+
+.header-actions {
+  display: flex;
+  gap: 4px;
 }
 
 .content {
   flex: 1;
   padding: 16px;
   overflow-y: auto;
-  background-color: #f5f7fa;
+  background-color: #f8fafc;
 }
 
 .input-card {
   margin-bottom: 16px;
   background-color: #fff;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
 }
 
 .input-actions {
@@ -248,19 +233,23 @@ async function handleAddToVocabulary() {
   margin-top: 12px;
 }
 
+.input-actions .n-button {
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  border: none;
+}
+
+.input-actions .n-button:hover {
+  background: linear-gradient(135deg, #4f46e5, #7c3aed);
+}
+
 .result-card {
   margin-bottom: 16px;
   background-color: #fff;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
 }
 
 .empty-state {
   margin-top: 60px;
-}
-
-.footer {
-  display: flex;
-  justify-content: space-around;
-  padding: 8px;
-  background-color: #fff;
 }
 </style>

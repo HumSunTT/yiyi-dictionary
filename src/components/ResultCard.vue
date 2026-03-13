@@ -243,7 +243,7 @@ function handleCopy() {
 
 .pos {
   display: inline-block;
-  background: linear-gradient(135deg, #667eea, #764ba2);
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
   color: white;
   padding: 2px 8px;
   border-radius: 4px;
@@ -264,12 +264,12 @@ function handleCopy() {
   padding: 8px 12px;
   background: var(--n-color-target);
   border-radius: 6px;
-  border-left: 3px solid #667eea;
+  border-left: 3px solid #6366f1;
 }
 
 .def-raw :deep(.pos-tag) {
   display: inline-block;
-  background: linear-gradient(135deg, #667eea, #764ba2);
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
   color: white;
   padding: 2px 6px;
   border-radius: 4px;
@@ -280,8 +280,8 @@ function handleCopy() {
 
 .def-raw :deep(.num) {
   display: inline-block;
-  background: #e8f5e9;
-  color: #2e7d32;
+  background: #ede9fe;
+  color: #7c3aed;
   padding: 1px 6px;
   border-radius: 4px;
   font-weight: 600;
@@ -289,14 +289,14 @@ function handleCopy() {
 }
 
 .def-raw :deep(.book) {
-  color: #1976d2;
+  color: #6366f1;
   font-weight: 500;
 }
 
 .def-raw :deep(.separator) {
   display: inline-block;
-  background: #fff3e0;
-  color: #e65100;
+  background: #fef3c7;
+  color: #d97706;
   padding: 1px 6px;
   border-radius: 4px;
   font-weight: 600;
@@ -322,7 +322,7 @@ function handleCopy() {
   padding: 10px 12px;
   border-radius: 8px;
   margin-bottom: 8px;
-  border-left: 3px solid #18a058;
+  border-left: 3px solid #8b5cf6;
 }
 
 .example-text {
@@ -332,8 +332,8 @@ function handleCopy() {
 }
 
 .example-text :deep(.highlight) {
-  background: linear-gradient(135deg, #fff3cd, #ffeaa7);
-  color: #856404;
+  background: linear-gradient(135deg, #fef3c7, #fde68a);
+  color: #92400e;
   padding: 1px 4px;
   border-radius: 3px;
   font-weight: 600;
@@ -358,15 +358,15 @@ function handleCopy() {
   font-size: 16px;
   line-height: 1.8;
   padding: 14px;
-  background: linear-gradient(135deg, #e8f5e9, #f3e5f5);
+  background: linear-gradient(135deg, #f5f3ff, #faf5ff);
   border-radius: 10px;
-  border-left: 4px solid #18a058;
+  border-left: 4px solid #8b5cf6;
 }
 
 .translation :deep(.tag) {
   display: inline-block;
-  background: #e3f2fd;
-  color: #1565c0;
+  background: #ede9fe;
+  color: #7c3aed;
   padding: 2px 6px;
   border-radius: 4px;
   font-size: 13px;
@@ -383,12 +383,12 @@ function handleCopy() {
   display: block;
   font-size: 16px;
   font-weight: 700;
-  color: #1a237e;
+  color: #4c1d95;
   padding: 10px 16px;
   margin: 12px 0 8px 0;
-  background: linear-gradient(135deg, #e8eaf6, #c5cae9);
+  background: linear-gradient(135deg, #f5f3ff, #ede9fe);
   border-radius: 8px;
-  border-left: 4px solid #3f51b5;
+  border-left: 4px solid #8b5cf6;
 }
 
 .translation :deep(.dict-source:first-child) {
@@ -397,7 +397,7 @@ function handleCopy() {
 
 .translation :deep(.tag-label) {
   display: inline-block;
-  background: linear-gradient(135deg, #667eea, #764ba2);
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
   color: white;
   padding: 3px 10px;
   border-radius: 4px;
@@ -408,7 +408,7 @@ function handleCopy() {
 
 .translation :deep(.pos-ancient) {
   display: inline-block;
-  background: linear-gradient(135deg, #4caf50, #2e7d32);
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
   color: white;
   padding: 1px 6px;
   border-radius: 3px;
@@ -418,13 +418,13 @@ function handleCopy() {
 }
 
 .translation :deep(.bullet) {
-  color: #18a058;
+  color: #8b5cf6;
   font-weight: bold;
   margin-right: 4px;
 }
 
 .translation :deep(.book-title) {
-  color: #1976d2;
+  color: #6366f1;
   font-weight: 600;
 }
 
