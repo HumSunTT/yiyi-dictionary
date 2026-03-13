@@ -7,13 +7,13 @@
         <template v-for="(section, index) in parsedSections" :key="index">
           <div v-if="section.type === 'chinese-english' || section.type === 'english-chinese'" class="dict-section">
             <div class="dict-title">{{ section.title }}</div>
-            <div class="dict-content" v-html="formatContent(section.content)"></div>
+            <div class="dict-content" v-html="formatContent(section.content || '')"></div>
           </div>
           <div v-if="section.type === 'ancient'" class="dict-section ancient-section">
             <div class="dict-title">{{ section.title }}</div>
             <div class="ancient-grid">
-              <div class="ancient-defs" v-html="formatAncientDefs(section.definitions)"></div>
-              <div class="ancient-examples" v-html="formatAncientExamples(section.examples)"></div>
+              <div class="ancient-defs" v-html="formatAncientDefs(section.definitions || '')"></div>
+              <div class="ancient-examples" v-html="formatAncientExamples(section.examples || '')"></div>
             </div>
           </div>
         </template>
