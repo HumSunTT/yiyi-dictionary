@@ -218,7 +218,6 @@ async function handleAddToVocabulary() {
   border-radius: 12px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
   width: 100%;
-  max-width: 900px;
 }
 
 .input-actions {
@@ -248,12 +247,10 @@ async function handleAddToVocabulary() {
   border-radius: 12px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
   width: 100%;
-  max-width: 900px;
 }
 
 .empty-state {
   margin-top: 60px;
   width: 100%;
-  max-width: 900px;
 }
 </style>

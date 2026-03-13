@@ -2,33 +2,40 @@
   <div class="result-card">
     <!-- 翻译结果 -->
     <div v-if="result.type === 'translation'" class="translation-container">
-      <!-- 左栏：词典内容 -->
-      <div class="left-column">
-        <template v-for="(section, index) in parsedSections" :key="index">
-          <div v-if="section.type === 'chinese-english' || section.type === 'english-chinese'" class="dict-section">
-            <div class="dict-title">{{ section.title }}</div>
-            <div class="dict-content" v-html="formatContent(section.content || '')"></div>
-          </div>
-          <div v-if="section.type === 'ancient'" class="dict-section ancient-section">
-            <div class="dict-title">{{ section.title }}</div>
-            <div class="ancient-grid">
-              <div class="ancient-defs" v-html="formatAncientDefs(section.definitions || '')"></div>
-              <div class="ancient-examples" v-html="formatAncientExamples(section.examples || '')"></div>
+      <!-- 上半部分：中英词典 + 相关短语（左右两栏） -->
+      <div class="top-section" v-if="hasDictOrPhrases">
+        <div class="left-column">
+          <template v-for="(section, index) in parsedSections" :key="index">
+            <div v-if="section.type === 'chinese-english' || section.type === 'english-chinese'" class="dict-section">
+              <div class="dict-title">{{ section.title }}</div>
+              <div class="dict-content" v-html="formatContent(section.content || '')"></div>
             </div>
-          </div>
-        </template>
+          </template>
+        </div>
+        
+        <div class="right-column">
+          <template v-for="(section, index) in parsedSections" :key="'phrase-'+index">
+            <div v-if="section.type === 'phrases'" class="dict-section phrase-section">
+              <div class="dict-title">相关短语</div>
+              <div class="phrase-list">
+                <div v-for="(phrase, pIndex) in section.phrases" :key="pIndex" class="phrase-item">
+                  <span class="phrase-word">{{ phrase.word }}</span>
+                  <span class="phrase-meaning">{{ phrase.meaning }}</span>
+                </div>
+              </div>
+            </div>
+          </template>
+        </div>
       </div>
       
-      <!-- 右栏：相关短语 -->
-      <div class="right-column">
-        <template v-for="(section, index) in parsedSections" :key="'r'+index">
-          <div v-if="section.type === 'phrases'" class="phrase-section">
-            <div class="dict-title">相关短语</div>
-            <div class="phrase-list">
-              <div v-for="(phrase, pIndex) in section.phrases" :key="pIndex" class="phrase-item">
-                <span class="phrase-word">{{ phrase.word }}</span>
-                <span class="phrase-meaning">{{ phrase.meaning }}</span>
-              </div>
+      <!-- 下半部分：古汉语字典 -->
+      <div class="ancient-sections">
+        <template v-for="(section, index) in parsedSections" :key="'ancient-'+index">
+          <div v-if="section.type === 'ancient'" class="dict-section ancient-section">
+            <div class="dict-title">{{ section.title }}</div>
+            <div class="ancient-content">
+              <div class="ancient-defs" v-html="formatAncientDefs(section.definitions || '')"></div>
+              <div class="ancient-examples" v-html="formatAncientExamples(section.examples || '')"></div>
             </div>
           </div>
         </template>
@@ -135,6 +142,14 @@ const parsedSections = computed(() => {
   return sections
 })
 
+const hasDictOrPhrases = computed(() => {
+  return parsedSections.value.some(s => 
+    s.type === 'chinese-english' || 
+    s.type === 'english-chinese' || 
+    s.type === 'phrases'
+  )
+})
+
 function parseAncientContent(content: string) {
   const lines = content.split('\n').filter(l => l.trim())
   const defLines: string[] = []
@@ -159,7 +174,7 @@ function formatContent(content: string): string {
   return content
     .split('\n')
     .filter(l => l.trim())
-    .map(line => `<div class="content-line">${line}</div>`)
+    .map(line => '<div class="content-line">' + line + '</div>')
     .join('')
 }
 
@@ -169,11 +184,11 @@ function formatAncientDefs(defs: string): string {
     .split('\n')
     .filter(l => l.trim())
     .map(line => {
-      const formatted = line
+      let formatted = line
         .replace(/([①②③④⑤⑥⑦⑧⑨⑩])/g, '<span class="num">$1</span>')
         .replace(/<([形动名代副介连助数量]+)>/g, '<span class="pos-tag">$1</span>')
         .replace(/《([^》]+)》/g, '<span class="book">《$1》</span>')
-      return `<div class="def-line">${formatted}</div>`
+      return '<div class="def-line">' + formatted + '</div>'
     })
     .join('')
 }
@@ -184,10 +199,10 @@ function formatAncientExamples(examples: string): string {
     .split('\n')
     .filter(l => l.trim())
     .map(line => {
-      const formatted = line
+      let formatted = line
         .replace(/•/g, '<span class="bullet">•</span>')
         .replace(/《([^》]+)》/g, '<span class="book">《$1》</span>')
-      return `<div class="example-line">${formatted}</div>`
+      return '<div class="example-line">' + formatted + '</div>'
     })
     .join('')
 }
@@ -198,11 +213,13 @@ function handleAddToVocabulary() {
 }
 
 function handleCopy() {
-  const textToCopy = props.result.type === 'translation' 
-    ? props.result.translation 
-    : props.result.word + ' ' + (props.result.definitions?.map(d => d.definition).join('; ') || '')
-  
-  navigator.clipboard.writeText(textToCopy || '')
+  let textToCopy = ''
+  if (props.result.type === 'translation') {
+    textToCopy = props.result.translation || ''
+  } else {
+    textToCopy = props.result.word + ' ' + (props.result.definitions?.map(d => d.definition).join('; ') || '')
+  }
+  navigator.clipboard.writeText(textToCopy)
   message.success('已复制到剪贴板')
 }
 </script>
@@ -212,24 +229,23 @@ function handleCopy() {
   padding: 16px;
 }
 
-.translation-container {
+.top-section {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 24px;
-}
-
-@media (max-width: 799px) {
-  .translation-container {
-    grid-template-columns: 1fr;
-  }
+  margin-bottom: 20px;
 }
 
 .left-column, .right-column {
   min-width: 0;
 }
 
+.ancient-sections {
+  margin-top: 20px;
+}
+
 .dict-section {
-  margin-bottom: 20px;
+  margin-bottom: 16px;
 }
 
 .dict-title {
@@ -250,83 +266,6 @@ function handleCopy() {
 
 .content-line {
   padding: 4px 0;
-}
-
-.content-line :deep(.pos-tag) {
-  display: inline-block;
-  background: #ede9fe;
-  color: #7c3aed;
-  padding: 1px 6px;
-  border-radius: 4px;
-  font-size: 12px;
-  font-weight: 600;
-  margin-right: 4px;
-}
-
-.ancient-section {
-  background: #fafafa;
-  border-radius: 8px;
-  padding: 12px;
-}
-
-.ancient-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
-}
-
-.ancient-defs {
-  font-size: 14px;
-  line-height: 1.8;
-}
-
-.ancient-defs :deep(.num) {
-  display: inline-block;
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
-  color: #fff;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  text-align: center;
-  line-height: 20px;
-  font-size: 12px;
-  font-weight: 600;
-  margin-right: 6px;
-}
-
-.ancient-defs :deep(.pos-tag) {
-  display: inline-block;
-  background: #fef3c7;
-  color: #92400e;
-  padding: 1px 6px;
-  border-radius: 4px;
-  font-size: 12px;
-  font-weight: 600;
-  margin: 0 2px;
-}
-
-.ancient-defs :deep(.book) {
-  color: #6366f1;
-  font-weight: 600;
-}
-
-.ancient-examples {
-  font-size: 13px;
-  line-height: 1.7;
-  color: #6b7280;
-  background: #f3f4f6;
-  padding: 10px;
-  border-radius: 6px;
-}
-
-.ancient-examples :deep(.bullet) {
-  color: #8b5cf6;
-  font-weight: bold;
-  margin-right: 4px;
-}
-
-.ancient-examples :deep(.book) {
-  color: #6366f1;
 }
 
 .phrase-section {
@@ -351,14 +290,39 @@ function handleCopy() {
 }
 
 .phrase-word {
-  font-weight: 700;
   color: #6366f1;
-  min-width: 120px;
+  min-width: 100px;
 }
 
 .phrase-meaning {
   color: #6b7280;
   font-size: 13px;
+}
+
+.ancient-section {
+  background: #fafafa;
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.ancient-content {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.ancient-defs {
+  font-size: 14px;
+  line-height: 1.8;
+}
+
+.ancient-examples {
+  font-size: 13px;
+  line-height: 1.7;
+  color: #6b7280;
+  background: #f3f4f6;
+  padding: 10px;
+  border-radius: 6px;
 }
 
 .dict-result {
@@ -398,7 +362,6 @@ function handleCopy() {
 }
 
 .pos {
-  display: inline-block;
   background: linear-gradient(135deg, #6366f1, #8b5cf6);
   color: #fff;
   padding: 2px 8px;
