@@ -495,3 +495,8 @@ pub fn detect_language(text: String) -> String {
         "auto".to_string()
     }
 }
+
+#[tauri::command]
+pub fn get_selected_text() -> Result<String, String> {
+    Err("此命令在 main.rs 中实现".to_string())
+}
