@@ -133,52 +133,8 @@ pub async fn translate_text(text: String, source_lang: String, state: State<'_, 
                         }
                     }
                     
-                    if !sections.is_empty() {
+if !sections.is_empty() {
                         let translation = sections.join("\n\n");
-                        let result = TranslationResult {
-                            r#type: "translation".to_string(),
-                            original: text.clone(),
-                            translation,
-                            notes: Some(vec![format!("来源：{}", sources.join("、"))]),
-                        };
-                        let result_json = serde_json::to_string(&result).unwrap_or_default();
-                        let _ = db.add_history(&text, &source_lang, &result_json, "local");
-                        Some(result)
-                    } else {
-                        None
-                    }
-                }
-                "english" => {
-                    let mut sections: Vec<String> = Vec::new();
-                    let mut sources: Vec<String> = Vec::new();
-                    
-                    if let Some(english) = db.query_english(&text) {
-                        sections.push(format!("【英汉词典】\n{}", format_dict_to_translation(&english)));
-                        sources.push("英汉词典".to_string());
-                        
-                        if !english.definitions.is_empty() {
-                        for def in &english.definitions {
-                                let chinese_words = extract_chinese_words(&def.definition);
-                                for word in chinese_words {
-                                    if let Ok(ancient_results) = db.query_ancient_all(&word) {
-                                        if !ancient_results.is_empty() {
-                                            let ancient_text = format_multiple_dicts_to_translation(&ancient_results);
-                                            sections.push(ancient_text);
-                                            for r in &ancient_results {
-                                                if let Some(s) = &r.source {
-                                                    sources.push(format!("{}（via 英汉）", s));
-                                                }
-                                            }
-                                            break;
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    
-                    if !sections.is_empty() {
-                        let translation = sections.join("\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n");
                         let result = TranslationResult {
                             r#type: "translation".to_string(),
                             original: text.clone(),

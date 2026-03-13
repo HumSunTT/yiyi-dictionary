@@ -31,17 +31,12 @@
         <n-input
           v-model:value="inputText"
           type="textarea"
-          placeholder="输入或粘贴文字，按 Enter 翻译..."
+          placeholder="输入中文或英文，按 Enter 翻译..."
           :autosize="{ minRows: 3, maxRows: 6 }"
           @keydown.enter="handleEnterKey"
         />
         <div class="input-actions">
-          <n-select
-            v-model:value="sourceLang"
-            :options="langOptions"
-            style="width: 120px"
-            size="small"
-          />
+          <span class="hint">自动识别语言</span>
           <n-button type="primary" @click="handleTranslate" :loading="dictionaryStore.loading">
             翻译
           </n-button>
@@ -88,7 +83,7 @@
 import { ref } from 'vue'
 import {
   NLayout, NLayoutHeader, NLayoutContent,
-  NCard, NInput, NButton, NSelect, NIcon, NDrawer, NDrawerContent, NEmpty, useMessage
+  NCard, NInput, NButton, NIcon, NDrawer, NDrawerContent, NEmpty, useMessage
 } from 'naive-ui'
 import { TimeOutline, StarOutline, SettingsOutline, HelpOutline } from '@vicons/ionicons5'
 import ResultCard from './ResultCard.vue'
@@ -108,7 +103,6 @@ const emit = defineEmits<{
 }>()
 
 const inputText = ref('')
-const sourceLang = ref('ancient')
 const result = ref<DictionaryResult | TranslationResult | null>(null)
 
 const showHistory = ref(false)
@@ -116,11 +110,11 @@ const showVocabulary = ref(false)
 const showSettings = ref(false)
 const showHelp = ref(false)
 
-const langOptions = [
-  { label: '古文', value: 'ancient' },
-  { label: '英文', value: 'english' },
-  { label: '中文', value: 'chinese' }
-]
+function detectLanguage(text: string): 'ancient' | 'english' {
+  const trimmed = text.trim()
+  const hasChinese = trimmed.split('').some(c => c >= '\u4e00' && c <= '\u9fff')
+  return hasChinese ? 'ancient' : 'english'
+}
 
 function handleEnterKey(event: KeyboardEvent) {
   if (event.shiftKey) return
@@ -132,11 +126,12 @@ async function handleTranslate() {
   if (!inputText.value.trim()) return
   
   try {
-    const dictResult = await dictionaryStore.queryWord(inputText.value, sourceLang.value as 'ancient' | 'english' | 'chinese')
+    const lang = detectLanguage(inputText.value)
+    const dictResult = await dictionaryStore.queryWord(inputText.value, lang)
     if (dictResult) {
       result.value = dictResult
     } else {
-      result.value = await dictionaryStore.translateText(inputText.value, sourceLang.value)
+      result.value = await dictionaryStore.translateText(inputText.value, lang)
     }
   } catch (error: any) {
     message.error(error.message || '翻译失败')
@@ -231,6 +226,11 @@ async function handleAddToVocabulary() {
   justify-content: space-between;
   align-items: center;
   margin-top: 12px;
+}
+
+.hint {
+  font-size: 13px;
+  color: #9ca3af;
 }
 
 .input-actions .n-button {
