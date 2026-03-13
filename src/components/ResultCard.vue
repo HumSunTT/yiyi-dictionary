@@ -33,14 +33,9 @@
 
     <!-- AI翻译结果 -->
     <div v-else-if="result.type === 'translation'" class="ai-result">
-      <div class="section-title">
-        <n-icon :component="SparklesOutline" />
-        AI翻译
-      </div>
       <div class="translation" v-html="formatTranslation(result.translation || '')"></div>
       
       <div v-if="result.notes?.length" class="notes">
-        <n-divider style="margin: 12px 0" />
         <div class="section-title">注释</div>
         <ul>
           <li v-for="(note, index) in result.notes" :key="index">{{ note }}</li>
@@ -128,13 +123,30 @@ function formatTranslation(text: string): string {
     .replace(/\r\n/g, '\n')
     .replace(/\r/g, '\n')
   
-  result = result.replace(/【(古汉语常用字字典|古汉语词典|康熙字典|中英词典|英汉词典|相关短语)】/g, '<div class="dict-source">$1</div>')
+  result = result.replace(/【(古汉语常用字字典|古汉语词典|康熙字典|中英词典|英汉词典|相关短语)】/g, '</div><div class="dict-source">$1</div><div class="dict-content">')
   
-  result = result.replace(/【例句】/g, '<div class="example-label">例句</div>')
+  result = result.replace(/【例句】/g, '</div><div class="example-label">例句</div><div class="dict-content">')
   
   result = result.replace(/<([形动名代副介连助数量]+)>/g, '<span class="pos-ancient">$1</span>')
   
   result = result.replace(/• /g, '<span class="bullet">•</span> ')
+  
+  result = result.replace(/《([^》]+)》/g, '<span class="book-title">《$1》</span>')
+  
+  result = result.replace(/\n/g, '<br/>')
+  
+  return '<div class="dict-content">' + result + '</div>'
+}
+
+function formatKangxi(text: string): string {
+  let result = text
+    .replace(/\\n/g, '\n')
+    .replace(/\r\n/g, '\n')
+    .replace(/\r/g, '\n')
+  
+  result = result.replace(/〔古文〕/g, '<span class="kangxi-ancient">〔古文〕</span>')
+  
+  result = result.replace(/又/g, '<br/><span class="kangxi-sep">又</span> ')
   
   result = result.replace(/《([^》]+)》/g, '<span class="book-title">《$1》</span>')
   
@@ -349,28 +361,41 @@ function handleCopy() {
 }
 
 .ai-result .translation {
-  font-size: 16px;
+  font-size: 15px;
   line-height: 1.8;
-  padding: 14px;
-  background: linear-gradient(135deg, #f5f3ff, #faf5ff);
+  padding: 16px;
+  background: linear-gradient(135deg, #fafafa, #f5f5f5);
   border-radius: 10px;
-  border-left: 4px solid #8b5cf6;
-  column-count: 1;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
 }
 
-@media (min-width: 900px) {
+@media (max-width: 899px) {
   .ai-result .translation {
-    column-count: 2;
-    column-gap: 30px;
+    grid-template-columns: 1fr;
   }
-  
-  .translation :deep(.dict-source) {
-    column-span: all;
-  }
-  
-  .translation :deep(.example-label) {
-    column-span: all;
-  }
+}
+
+.translation :deep(.dict-source) {
+  grid-column: 1 / -1;
+  font-size: 15px;
+  font-weight: 700;
+  color: #4c1d95;
+  padding: 8px 12px;
+  margin-bottom: 8px;
+  background: linear-gradient(135deg, #f5f3ff, #ede9fe);
+  border-radius: 6px;
+  border-left: 3px solid #8b5cf6;
+}
+
+.translation :deep(.example-label) {
+  grid-column: 1 / -1;
+  font-weight: 600;
+  color: #6b7280;
+  margin-top: 8px;
+  padding-bottom: 4px;
+  border-bottom: 1px dashed #d1d5db;
 }
 
 .translation :deep(.tag) {
@@ -383,10 +408,31 @@ function handleCopy() {
   font-weight: 500;
 }
 
-.translation :deep(.dict-separator) {
-  height: 1px;
-  background: linear-gradient(90deg, transparent, #c5cae9, transparent);
-  margin: 20px 0;
+.translation :deep(.dict-source) {
+  font-size: 15px;
+  font-weight: 700;
+  color: #4c1d95;
+  padding: 8px 12px;
+  margin: 12px 0 8px 0;
+  background: linear-gradient(135deg, #f5f3ff, #ede9fe);
+  border-radius: 6px;
+  border-left: 3px solid #8b5cf6;
+}
+
+.translation :deep(.dict-source:first-child) {
+  margin-top: 0;
+}
+
+.translation :deep(.dict-content) {
+  margin-bottom: 8px;
+}
+
+.translation :deep(.example-label) {
+  font-weight: 600;
+  color: #6b7280;
+  margin-top: 8px;
+  padding: 4px 8px;
+  border-bottom: 1px dashed #d1d5db;
 }
 
 .translation :deep(.dict-source) {
@@ -436,6 +482,24 @@ function handleCopy() {
 .translation :deep(.book-title) {
   color: #6366f1;
   font-weight: 600;
+}
+
+.translation :deep(.kangxi-ancient) {
+  background: #fef3c7;
+  color: #92400e;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 600;
+}
+
+.translation :deep(.kangxi-sep) {
+  display: inline-block;
+  background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+  color: #1e40af;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-weight: 600;
+  margin-right: 4px;
 }
 
 .notes ul {

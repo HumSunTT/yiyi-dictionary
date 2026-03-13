@@ -107,7 +107,7 @@ pub async fn translate_text(text: String, source_lang: String, state: State<'_, 
                     let mut sources: Vec<String> = Vec::new();
                     
                     if let Some(chinese) = db.query_chinese(&text) {
-                        sections.push(format!("【中英词典】\n{}", format_chinese_to_english(&chinese)));
+                        sections.push(format!("【中英词典】{}", format_chinese_to_english(&chinese)));
                         sources.push("中英词典".to_string());
                     }
                     
@@ -117,7 +117,7 @@ pub async fn translate_text(text: String, source_lang: String, state: State<'_, 
                         for eng in &english_results {
                             phrases.push(format_english_phrase(eng));
                         }
-                        sections.push(format!("【相关短语】\n{}", phrases.join("\n")));
+                        sections.push(format!("【相关短语】{}", phrases.join("\n")));
                         sources.push("英汉词典".to_string());
                     }
                     
@@ -153,7 +153,7 @@ if !sections.is_empty() {
                     let mut sources: Vec<String> = Vec::new();
                     
                     if let Some(english) = db.query_english(&text) {
-                        sections.push(format!("【英汉词典】\n{}", format_dict_to_translation(&english)));
+                        sections.push(format!("【英汉词典】{}", format_dict_to_translation(&english)));
                         sources.push("英汉词典".to_string());
                         
                         if !english.definitions.is_empty() {
