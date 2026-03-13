@@ -258,10 +258,19 @@ fn format_dict_to_translation(dict: &DictionaryResult) -> String {
     let mut lines = Vec::new();
     
     for def in &dict.definitions {
+        let definition = def.definition.replace("\\n", "\n");
         if def.pos.is_empty() {
-            lines.push(def.definition.clone());
+            for line in definition.split('\n') {
+                if !line.is_empty() {
+                    lines.push(line.to_string());
+                }
+            }
         } else {
-            lines.push(format!("{} {}", def.pos, def.definition));
+            for line in definition.split('\n') {
+                if !line.is_empty() {
+                    lines.push(format!("{} {}", def.pos, line));
+                }
+            }
         }
     }
     
