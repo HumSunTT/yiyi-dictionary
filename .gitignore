@@ -36,11 +36,11 @@ yarn-error.log*
 .env.local
 .env.*.local
 
-# Database
-*.db
-*.sqlite
-*.sqlite3
-!dictionaries/*.db
+# Database (user data)
+src-tauri/yi_yi.db
+src-tauri/yi_yi.db-journal
+src-tauri/yi_yi.db-wal
+# Keep dict_data.db (sample dictionary for build)
 
 # Cache
 .cache/
