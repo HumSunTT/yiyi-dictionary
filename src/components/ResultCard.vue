@@ -1,45 +1,51 @@
 <template>
   <div class="result-card">
+    <!-- 翻译结果 -->
+    <div v-if="result.type === 'translation'" class="translation-container">
+      <!-- 左栏：词典内容 -->
+      <div class="left-column">
+        <template v-for="(section, index) in parsedSections" :key="index">
+          <div v-if="section.type === 'chinese-english' || section.type === 'english-chinese'" class="dict-section">
+            <div class="dict-title">{{ section.title }}</div>
+            <div class="dict-content" v-html="formatContent(section.content)"></div>
+          </div>
+          <div v-if="section.type === 'ancient'" class="dict-section ancient-section">
+            <div class="dict-title">{{ section.title }}</div>
+            <div class="ancient-grid">
+              <div class="ancient-defs" v-html="formatAncientDefs(section.definitions)"></div>
+              <div class="ancient-examples" v-html="formatAncientExamples(section.examples)"></div>
+            </div>
+          </div>
+        </template>
+      </div>
+      
+      <!-- 右栏：相关短语 -->
+      <div class="right-column">
+        <template v-for="(section, index) in parsedSections" :key="'r'+index">
+          <div v-if="section.type === 'phrases'" class="phrase-section">
+            <div class="dict-title">相关短语</div>
+            <div class="phrase-list">
+              <div v-for="(phrase, pIndex) in section.phrases" :key="pIndex" class="phrase-item">
+                <span class="phrase-word">{{ phrase.word }}</span>
+                <span class="phrase-meaning">{{ phrase.meaning }}</span>
+              </div>
+            </div>
+          </div>
+        </template>
+      </div>
+    </div>
+    
     <!-- 词库结果 -->
-    <div v-if="result.type === 'dictionary'" class="dict-result">
+    <div v-else-if="result.type === 'dictionary'" class="dict-result">
       <div class="word-header">
         <span class="word">{{ result.word }}</span>
         <span v-if="result.phonetic" class="phonetic">{{ result.phonetic }}</span>
-        <n-tag v-if="result.source" size="small" type="info">{{ result.source }}</n-tag>
       </div>
-      
-      <n-divider style="margin: 12px 0" />
-      
       <div class="definitions">
         <div v-for="(item, index) in result.definitions" :key="index" class="def-item">
-          <div v-if="item.pos" class="def-line">
-            <span class="pos">{{ item.pos }}</span>
-            <span class="def-text">{{ item.definition }}</span>
-          </div>
-          <div v-else class="def-raw" v-html="formatRawDefinition(item.definition)"></div>
+          <span v-if="item.pos" class="pos">{{ item.pos }}</span>
+          <span class="def-text">{{ item.definition }}</span>
         </div>
-      </div>
-
-      <div v-if="result.examples?.length" class="examples">
-        <n-divider style="margin: 12px 0" />
-        <div class="section-title">例句</div>
-        <div v-for="(ex, index) in result.examples" :key="index" class="example-item">
-          <p class="example-text" v-html="highlightWord(ex.text, result.word || '')"></p>
-          <p class="trans" v-if="ex.translation">{{ ex.translation }}</p>
-          <p class="source" v-if="ex.source">—— {{ ex.source }}</p>
-        </div>
-      </div>
-    </div>
-
-    <!-- AI翻译结果 -->
-    <div v-else-if="result.type === 'translation'" class="ai-result">
-      <div class="translation" v-html="formatTranslation(result.translation || '')"></div>
-      
-      <div v-if="result.notes?.length" class="notes">
-        <div class="section-title">注释</div>
-        <ul>
-          <li v-for="(note, index) in result.notes" :key="index">{{ note }}</li>
-        </ul>
       </div>
     </div>
 
@@ -58,8 +64,9 @@
 </template>
 
 <script setup lang="ts">
-import { NDivider, NTag, NButton, NIcon, useMessage } from 'naive-ui'
-import { StarOutline, CopyOutline, SparklesOutline } from '@vicons/ionicons5'
+import { computed } from 'vue'
+import { NButton, NIcon, useMessage } from 'naive-ui'
+import { StarOutline, CopyOutline } from '@vicons/ionicons5'
 
 const props = defineProps<{
   result: {
@@ -80,79 +87,109 @@ const emit = defineEmits<{
 
 const message = useMessage()
 
-function formatRawDefinition(text: string): string {
-  // 先将各种换行符统一处理
-  let result = text
-    // 处理实际的换行符
-    .replace(/\r\n/g, '\n')
-    .replace(/\r/g, '\n')
-    // 处理字面的 \n 字符串
+interface ParsedSection {
+  type: 'chinese-english' | 'english-chinese' | 'phrases' | 'ancient'
+  title: string
+  content?: string
+  phrases?: { word: string; meaning: string }[]
+  definitions?: string
+  examples?: string
+}
+
+const parsedSections = computed(() => {
+  if (!props.result.translation) return []
+  
+  const text = props.result.translation
     .replace(/\\n/g, '\n')
+    .replace(/\r\n/g, '\n')
   
-  // 词性标签高亮 (n. vt. vi. adj. adv. prep. conj. int. 等)
-  result = result.replace(/\b([a-z]+\.)/gi, '<span class="pos-tag">$1</span>')
+  const sections: ParsedSection[] = []
+  const parts = text.split(/【([^】]+)】/).filter(p => p.trim())
   
-  // 序号高亮
-  result = result.replace(/([①②③④⑤⑥⑦⑧⑨⑩])/g, '<span class="num">$1</span>')
+  for (let i = 0; i < parts.length; i += 2) {
+    const title = parts[i]?.trim() || ''
+    const content = parts[i + 1]?.trim() || ''
+    
+    if (title === '中英词典') {
+      sections.push({ type: 'chinese-english', title: '中英词典', content })
+    } else if (title === '英汉词典') {
+      sections.push({ type: 'english-chinese', title: '英汉词典', content })
+    } else if (title === '相关短语') {
+      const lines = content.split('\n').filter(l => l.trim())
+      const phrases = lines.map(line => {
+        const parts = line.split(/\s+/, 2)
+        return { word: parts[0] || '', meaning: parts[1] || '' }
+      })
+      sections.push({ type: 'phrases', title: '相关短语', phrases })
+    } else if (title === '古汉语词典' || title === '古汉语常用字字典' || title === '康熙字典') {
+      const { defs, examples } = parseAncientContent(content)
+      sections.push({ 
+        type: 'ancient', 
+        title, 
+        definitions: defs,
+        examples: examples
+      })
+    }
+  }
   
-  // 书名号高亮
-  result = result.replace(/《([^》]+)》/g, '<span class="book">《$1》</span>')
+  return sections
+})
+
+function parseAncientContent(content: string) {
+  const lines = content.split('\n').filter(l => l.trim())
+  const defLines: string[] = []
+  const exampleLines: string[] = []
+  let inExample = false
   
-  // "又" 开头的分段高亮
-  result = result.replace(/又/g, '<span class="separator">又</span>')
+  for (const line of lines) {
+    if (line.includes('例句') || line.startsWith('•')) {
+      inExample = true
+    }
+    if (inExample) {
+      exampleLines.push(line)
+    } else {
+      defLines.push(line)
+    }
+  }
   
-  // 按换行分割成段落
-  const lines = result.split('\n')
-  const formattedLines = lines
-    .filter(line => line.trim())
-    .map(line => `<div class="def-paragraph">${line}</div>`)
+  return { defs: defLines.join('\n'), examples: exampleLines.join('\n') }
+}
+
+function formatContent(content: string): string {
+  return content
+    .split('\n')
+    .filter(l => l.trim())
+    .map(line => `<div class="content-line">${line}</div>`)
     .join('')
-  
-  return formattedLines || `<div class="def-paragraph">${result}</div>`
 }
 
-function highlightWord(text: string, word: string): string {
-  if (!word) return text
-  const regex = new RegExp(`(${word})`, 'g')
-  return text.replace(regex, '<span class="highlight">$1</span>')
+function formatAncientDefs(defs: string): string {
+  if (!defs) return ''
+  return defs
+    .split('\n')
+    .filter(l => l.trim())
+    .map(line => {
+      const formatted = line
+        .replace(/([①②③④⑤⑥⑦⑧⑨⑩])/g, '<span class="num">$1</span>')
+        .replace(/<([形动名代副介连助数量]+)>/g, '<span class="pos-tag">$1</span>')
+        .replace(/《([^》]+)》/g, '<span class="book">《$1》</span>')
+      return `<div class="def-line">${formatted}</div>`
+    })
+    .join('')
 }
 
-function formatTranslation(text: string): string {
-  let result = text
-    .replace(/\\n/g, '\n')
-    .replace(/\r\n/g, '\n')
-    .replace(/\r/g, '\n')
-  
-  result = result.replace(/【(古汉语常用字字典|古汉语词典|康熙字典|中英词典|英汉词典|相关短语)】/g, '</div><div class="dict-source">$1</div><div class="dict-content">')
-  
-  result = result.replace(/【例句】/g, '</div><div class="example-label">例句</div><div class="dict-content">')
-  
-  result = result.replace(/<([形动名代副介连助数量]+)>/g, '<span class="pos-ancient">$1</span>')
-  
-  result = result.replace(/• /g, '<span class="bullet">•</span> ')
-  
-  result = result.replace(/《([^》]+)》/g, '<span class="book-title">《$1》</span>')
-  
-  result = result.replace(/\n/g, '<br/>')
-  
-  return '<div class="dict-content">' + result + '</div>'
-}
-
-function formatKangxi(text: string): string {
-  let result = text
-    .replace(/\\n/g, '\n')
-    .replace(/\r\n/g, '\n')
-    .replace(/\r/g, '\n')
-  
-  result = result.replace(/〔古文〕/g, '<span class="kangxi-ancient">〔古文〕</span>')
-  
-  result = result.replace(/又/g, '<br/><span class="kangxi-sep">又</span> ')
-  
-  result = result.replace(/《([^》]+)》/g, '<span class="book-title">《$1》</span>')
-  
-  result = result.replace(/\n/g, '<br/>')
-  
-  return result
+function formatAncientExamples(examples: string): string {
+  if (!examples) return ''
+  return examples
+    .split('\n')
+    .filter(l => l.trim())
+    .map(line => {
+      const formatted = line
+        .replace(/•/g, '<span class="bullet">•</span>')
+        .replace(/《([^》]+)》/g, '<span class="book">《$1》</span>')
+      return `<div class="example-line">${formatted}</div>`
+    })
+    .join('')
 }
 
 function handleAddToVocabulary() {
@@ -161,88 +198,201 @@ function handleAddToVocabulary() {
 }
 
 function handleCopy() {
-  let textToCopy = ''
+  const textToCopy = props.result.type === 'translation' 
+    ? props.result.translation 
+    : props.result.word + ' ' + (props.result.definitions?.map(d => d.definition).join('; ') || '')
   
-  if (props.result.type === 'dictionary') {
-    // 复制完整的词典结果
-    const parts: string[] = []
-    
-    if (props.result.word) {
-      parts.push(`【${props.result.word}】`)
-    }
-    if (props.result.phonetic) {
-      parts.push(`拼音: ${props.result.phonetic}`)
-    }
-    if (props.result.definitions) {
-      parts.push('\n释义:')
-      props.result.definitions.forEach(def => {
-        if (def.pos) {
-          parts.push(`  ${def.pos} ${def.definition}`)
-        } else {
-          parts.push(`  ${def.definition}`)
-        }
-      })
-    }
-    if (props.result.examples?.length) {
-      parts.push('\n例句:')
-      props.result.examples.forEach(ex => {
-        parts.push(`  ${ex.text}`)
-        if (ex.translation) parts.push(`  译: ${ex.translation}`)
-        if (ex.source) parts.push(`  —— ${ex.source}`)
-      })
-    }
-    
-    textToCopy = parts.join('\n')
-  } else if (props.result.type === 'translation') {
-    // 复制翻译结果
-    textToCopy = props.result.translation || ''
-  }
-  
-  navigator.clipboard.writeText(textToCopy)
+  navigator.clipboard.writeText(textToCopy || '')
   message.success('已复制到剪贴板')
 }
 </script>
 
 <style scoped>
 .result-card {
-  padding: 4px;
+  padding: 16px;
+}
+
+.translation-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+@media (max-width: 799px) {
+  .translation-container {
+    grid-template-columns: 1fr;
+  }
+}
+
+.left-column, .right-column {
+  min-width: 0;
+}
+
+.dict-section {
+  margin-bottom: 20px;
+}
+
+.dict-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #fff;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  padding: 6px 12px;
+  border-radius: 6px;
+  margin-bottom: 12px;
+}
+
+.dict-content {
+  font-size: 14px;
+  line-height: 1.8;
+  color: #374151;
+}
+
+.content-line {
+  padding: 4px 0;
+}
+
+.content-line :deep(.pos-tag) {
+  display: inline-block;
+  background: #ede9fe;
+  color: #7c3aed;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  margin-right: 4px;
+}
+
+.ancient-section {
+  background: #fafafa;
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.ancient-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.ancient-defs {
+  font-size: 14px;
+  line-height: 1.8;
+}
+
+.ancient-defs :deep(.num) {
+  display: inline-block;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  color: #fff;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  text-align: center;
+  line-height: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  margin-right: 6px;
+}
+
+.ancient-defs :deep(.pos-tag) {
+  display: inline-block;
+  background: #fef3c7;
+  color: #92400e;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  margin: 0 2px;
+}
+
+.ancient-defs :deep(.book) {
+  color: #6366f1;
+  font-weight: 600;
+}
+
+.ancient-examples {
+  font-size: 13px;
+  line-height: 1.7;
+  color: #6b7280;
+  background: #f3f4f6;
+  padding: 10px;
+  border-radius: 6px;
+}
+
+.ancient-examples :deep(.bullet) {
+  color: #8b5cf6;
+  font-weight: bold;
+  margin-right: 4px;
+}
+
+.ancient-examples :deep(.book) {
+  color: #6366f1;
+}
+
+.phrase-section {
+  background: #f8fafc;
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.phrase-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.phrase-item {
+  display: flex;
+  gap: 8px;
+  padding: 6px 8px;
+  background: #fff;
+  border-radius: 6px;
+  border-left: 3px solid #8b5cf6;
+}
+
+.phrase-word {
+  font-weight: 700;
+  color: #6366f1;
+  min-width: 120px;
+}
+
+.phrase-meaning {
+  color: #6b7280;
+  font-size: 13px;
+}
+
+.dict-result {
+  padding: 8px;
 }
 
 .word-header {
   display: flex;
   align-items: baseline;
   gap: 12px;
-  flex-wrap: wrap;
+  margin-bottom: 16px;
 }
 
 .word {
   font-size: 28px;
   font-weight: 700;
-  color: var(--n-text-color);
+  color: #1f2937;
 }
 
 .phonetic {
   font-size: 14px;
-  color: #999;
+  color: #9ca3af;
   font-style: italic;
 }
 
 .definitions {
-  margin-top: 8px;
-}
-
-.def-item {
-  margin-bottom: 12px;
-  line-height: 1.8;
-}
-
-.def-line {
   display: flex;
-  align-items: flex-start;
+  flex-direction: column;
   gap: 8px;
 }
 
-.def-text {
+.def-item {
+  display: flex;
+  gap: 8px;
   font-size: 15px;
   line-height: 1.6;
 }
@@ -250,273 +400,24 @@ function handleCopy() {
 .pos {
   display: inline-block;
   background: linear-gradient(135deg, #6366f1, #8b5cf6);
-  color: white;
+  color: #fff;
   padding: 2px 8px;
   border-radius: 4px;
   font-size: 12px;
-  font-weight: 500;
+  font-weight: 600;
   white-space: nowrap;
-  flex-shrink: 0;
+  height: fit-content;
 }
 
-.def-raw {
-  font-size: 15px;
-  line-height: 1.8;
-  color: var(--n-text-color);
-}
-
-.def-paragraph {
-  margin-bottom: 10px;
-  padding: 8px 12px;
-  background: var(--n-color-target);
-  border-radius: 6px;
-  border-left: 3px solid #6366f1;
-}
-
-.def-raw :deep(.pos-tag) {
-  display: inline-block;
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
-  color: white;
-  padding: 2px 6px;
-  border-radius: 4px;
-  font-size: 12px;
-  font-weight: 500;
-  margin-right: 6px;
-}
-
-.def-raw :deep(.num) {
-  display: inline-block;
-  background: #ede9fe;
-  color: #7c3aed;
-  padding: 1px 6px;
-  border-radius: 4px;
-  font-weight: 600;
-  margin-right: 4px;
-}
-
-.def-raw :deep(.book) {
-  color: #6366f1;
-  font-weight: 500;
-}
-
-.def-raw :deep(.separator) {
-  display: inline-block;
-  background: #fef3c7;
-  color: #d97706;
-  padding: 1px 6px;
-  border-radius: 4px;
-  font-weight: 600;
-  margin-right: 6px;
-}
-
-.examples {
-  margin-top: 8px;
-}
-
-.section-title {
-  font-size: 13px;
-  color: #666;
-  margin-bottom: 8px;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-weight: 500;
-}
-
-.example-item {
-  background: var(--n-color-target);
-  padding: 10px 12px;
-  border-radius: 8px;
-  margin-bottom: 8px;
-  border-left: 3px solid #8b5cf6;
-}
-
-.example-text {
-  font-size: 14px;
-  line-height: 1.6;
-  margin: 0;
-}
-
-.example-text :deep(.highlight) {
-  background: linear-gradient(135deg, #fef3c7, #fde68a);
-  color: #92400e;
-  padding: 1px 4px;
-  border-radius: 3px;
-  font-weight: 600;
-}
-
-.example-item .trans {
-  color: #666;
-  font-size: 13px;
-  margin-top: 6px;
-  margin-bottom: 0;
-}
-
-.example-item .source {
-  color: #999;
-  font-size: 12px;
-  margin-top: 4px;
-  margin-bottom: 0;
-  text-align: right;
-}
-
-.ai-result .translation {
-  font-size: 15px;
-  line-height: 1.8;
-  padding: 16px;
-  background: linear-gradient(135deg, #fafafa, #f5f5f5);
-  border-radius: 10px;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 20px;
-}
-
-@media (max-width: 899px) {
-  .ai-result .translation {
-    grid-template-columns: 1fr;
-  }
-}
-
-.translation :deep(.dict-source) {
-  grid-column: 1 / -1;
-  font-size: 15px;
-  font-weight: 700;
-  color: #4c1d95;
-  padding: 8px 12px;
-  margin-bottom: 8px;
-  background: linear-gradient(135deg, #f5f3ff, #ede9fe);
-  border-radius: 6px;
-  border-left: 3px solid #8b5cf6;
-}
-
-.translation :deep(.example-label) {
-  grid-column: 1 / -1;
-  font-weight: 600;
-  color: #6b7280;
-  margin-top: 8px;
-  padding-bottom: 4px;
-  border-bottom: 1px dashed #d1d5db;
-}
-
-.translation :deep(.tag) {
-  display: inline-block;
-  background: #ede9fe;
-  color: #7c3aed;
-  padding: 2px 6px;
-  border-radius: 4px;
-  font-size: 13px;
-  font-weight: 500;
-}
-
-.translation :deep(.dict-source) {
-  font-size: 15px;
-  font-weight: 700;
-  color: #4c1d95;
-  padding: 8px 12px;
-  margin: 12px 0 8px 0;
-  background: linear-gradient(135deg, #f5f3ff, #ede9fe);
-  border-radius: 6px;
-  border-left: 3px solid #8b5cf6;
-}
-
-.translation :deep(.dict-source:first-child) {
-  margin-top: 0;
-}
-
-.translation :deep(.dict-content) {
-  margin-bottom: 8px;
-}
-
-.translation :deep(.example-label) {
-  font-weight: 600;
-  color: #6b7280;
-  margin-top: 8px;
-  padding: 4px 8px;
-  border-bottom: 1px dashed #d1d5db;
-}
-
-.translation :deep(.dict-source) {
-  display: block;
-  font-size: 16px;
-  font-weight: 700;
-  color: #4c1d95;
-  padding: 10px 16px;
-  margin: 12px 0 8px 0;
-  background: linear-gradient(135deg, #f5f3ff, #ede9fe);
-  border-radius: 8px;
-  border-left: 4px solid #8b5cf6;
-}
-
-.translation :deep(.dict-source:first-child) {
-  margin-top: 0;
-}
-
-.translation :deep(.tag-label) {
-  display: inline-block;
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
-  color: white;
-  padding: 3px 10px;
-  border-radius: 4px;
-  font-size: 13px;
-  font-weight: 600;
-  margin: 8px 0;
-}
-
-.translation :deep(.pos-ancient) {
-  display: inline-block;
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
-  color: white;
-  padding: 1px 6px;
-  border-radius: 3px;
-  font-size: 12px;
-  font-weight: 600;
-  margin: 0 2px;
-}
-
-.translation :deep(.bullet) {
-  color: #8b5cf6;
-  font-weight: bold;
-  margin-right: 4px;
-}
-
-.translation :deep(.book-title) {
-  color: #6366f1;
-  font-weight: 600;
-}
-
-.translation :deep(.kangxi-ancient) {
-  background: #fef3c7;
-  color: #92400e;
-  padding: 2px 6px;
-  border-radius: 4px;
-  font-weight: 600;
-}
-
-.translation :deep(.kangxi-sep) {
-  display: inline-block;
-  background: linear-gradient(135deg, #dbeafe, #bfdbfe);
-  color: #1e40af;
-  padding: 1px 6px;
-  border-radius: 4px;
-  font-weight: 600;
-  margin-right: 4px;
-}
-
-.notes ul {
-  padding-left: 20px;
-  margin: 8px 0;
-}
-
-.notes li {
-  margin-bottom: 4px;
-  font-size: 14px;
-  color: #666;
-  line-height: 1.5;
+.def-text {
+  color: #374151;
 }
 
 .actions {
   display: flex;
   gap: 8px;
   margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #e5e7eb;
 }
 </style>

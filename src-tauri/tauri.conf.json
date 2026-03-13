@@ -13,9 +13,9 @@
     "windows": [
       {
         "title": "易译 - 划词翻译助手",
-        "width": 420,
+        "width": 900,
         "height": 560,
-        "minWidth": 360,
+        "minWidth": 600,
         "minHeight": 400,
         "resizable": true,
         "fullscreen": false,
