@@ -127,12 +127,7 @@ async function handleTranslate() {
   
   try {
     const lang = detectLanguage(inputText.value)
-    const dictResult = await dictionaryStore.queryWord(inputText.value, lang)
-    if (dictResult) {
-      result.value = dictResult
-    } else {
-      result.value = await dictionaryStore.translateText(inputText.value, lang)
-    }
+    result.value = await dictionaryStore.translateText(inputText.value, lang)
   } catch (error: any) {
     message.error(error.message || '翻译失败')
   }
