@@ -107,15 +107,17 @@ pub async fn translate_text(text: String, source_lang: String, state: State<'_, 
                     let mut sources: Vec<String> = Vec::new();
                     
                     if let Some(chinese) = db.query_chinese(&text) {
-                        sections.push(format!("【中英词典】\n{}", format_dict_to_translation(&chinese)));
+                        sections.push(format!("【中英词典】\n{}", format_chinese_to_english(&chinese)));
                         sources.push("中英词典".to_string());
                     }
                     
                     let english_results = db.query_english_by_chinese(&text);
                     if !english_results.is_empty() {
+                        let mut phrases: Vec<String> = Vec::new();
                         for eng in &english_results {
-                            sections.push(format!("【英汉词典-{}】\n{}", eng.word, format_dict_to_translation(eng)));
+                            phrases.push(format_english_phrase(eng));
                         }
+                        sections.push(format!("【相关短语】\n{}", phrases.join("\n")));
                         sources.push("英汉词典".to_string());
                     }
                     
@@ -132,7 +134,7 @@ pub async fn translate_text(text: String, source_lang: String, state: State<'_, 
                     }
                     
                     if !sections.is_empty() {
-                        let translation = sections.join("\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n");
+                        let translation = sections.join("\n\n");
                         let result = TranslationResult {
                             r#type: "translation".to_string(),
                             original: text.clone(),
@@ -292,7 +294,7 @@ fn format_multiple_dicts_to_translation(dicts: &[DictionaryResult]) -> String {
         sections.push(content.join("\n"));
     }
     
-    sections.join("\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n")
+    sections.join("\n\n────────────────────────────────────\n\n")
 }
 
 /// 将词典结果格式化为翻译文本
@@ -300,7 +302,11 @@ fn format_dict_to_translation(dict: &DictionaryResult) -> String {
     let mut lines = Vec::new();
     
     for def in &dict.definitions {
-        lines.push(format!("【{}】{}", def.pos, def.definition));
+        if def.pos.is_empty() {
+            lines.push(def.definition.clone());
+        } else {
+            lines.push(format!("{} {}", def.pos, def.definition));
+        }
     }
     
     if let Some(examples) = &dict.examples {
@@ -321,6 +327,31 @@ fn format_dict_to_translation(dict: &DictionaryResult) -> String {
     }
     
     lines.join("\n")
+}
+
+/// 格式化中英词典结果
+fn format_chinese_to_english(dict: &DictionaryResult) -> String {
+    let mut lines = Vec::new();
+    
+    for def in &dict.definitions {
+        let first_line = def.definition.split('\n').next().unwrap_or(&def.definition);
+        lines.push(first_line.to_string());
+    }
+    
+    lines.join("\n")
+}
+
+/// 格式化英文短语
+fn format_english_phrase(dict: &DictionaryResult) -> String {
+    let word = &dict.word;
+    let meaning = dict.definitions.first()
+        .map(|d| {
+            let first_line = d.definition.split('\n').next().unwrap_or(&d.definition);
+            first_line.to_string()
+        })
+        .unwrap_or_default();
+    
+    format!("{} {}", word, meaning)
 }
 
 /// 从文本中提取中文词汇

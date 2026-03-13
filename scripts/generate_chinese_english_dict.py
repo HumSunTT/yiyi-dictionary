@@ -20,7 +20,6 @@ def main():
         if ' ' in word:
             continue
         
-        # 匹配词性标注后的中文词，如 "n. 家庭, 家人"
         pos_pattern = r'^([a-z]+\.?)\s*([\u4e00-\u9fff]+)'
         match = re.search(pos_pattern, definition)
         
@@ -36,7 +35,6 @@ def main():
                     'score': 100
                 })
         
-        # 匹配逗号分隔的中文词，如 "家庭, 家人, 族"
         comma_pattern = r'[,，]\s*([\u4e00-\u9fff]+)'
         for match in re.finditer(comma_pattern, definition):
             chinese_word = match.group(1)
@@ -55,10 +53,8 @@ def main():
     
     insert_count = 0
     for chinese_word, entries in chinese_to_english.items():
-        # 按分数和单词长度排序
         entries.sort(key=lambda x: (-x['score'], len(x['word'])))
         
-        # 去重，保留前10个不同单词
         seen_words = set()
         top_entries = []
         for entry in entries:
@@ -69,20 +65,13 @@ def main():
                     break
         
         definitions = []
-        examples = []
         
         for entry in top_entries:
+            first_line = entry['definition'].split('\n')[0]
             definitions.append({
                 'pos': entry['pos'],
-                'definition': entry['word']
+                'definition': f"{entry['word']} {first_line}"
             })
-            
-            if len(examples) < 3:
-                trans = entry['definition'].split('\n')[0][:80]
-                examples.append({
-                    'text': entry['word'],
-                    'translation': trans
-                })
         
         if definitions:
             cursor.execute(
@@ -91,7 +80,7 @@ def main():
                     chinese_word,
                     None,
                     json.dumps(definitions, ensure_ascii=False),
-                    json.dumps(examples, ensure_ascii=False),
+                    json.dumps([], ensure_ascii=False),
                     len(entries)
                 )
             )

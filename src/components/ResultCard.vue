@@ -128,17 +128,11 @@ function formatTranslation(text: string): string {
     .replace(/\r\n/g, '\n')
     .replace(/\r/g, '\n')
   
-  // 分隔线转为分割区块
-  result = result.replace(/━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━/g, '<div class="dict-separator"></div>')
+  // 字典来源标签高亮
+  result = result.replace(/【(古汉语常用字字典|古汉语词典|康熙字典|中英词典|相关短语)】/g, '<div class="dict-source">$1</div>')
   
-  // 【】字典来源标签高亮
-  result = result.replace(/【(古汉语常用字字典|古汉语词典|康熙字典|英汉词典|中英词典)】/g, '<div class="dict-source">$1</div>')
-  
-  // 【翻译】【注释】等标签
-  result = result.replace(/【(翻译|注释|例句)】/g, '<span class="tag-label">$1</span>')
-  
-  // 其他【】标签
-  result = result.replace(/【([^】]+)】/g, '<span class="tag">【$1】</span>')
+  // 例句标签
+  result = result.replace(/【例句】/g, '<div class="example-label">例句</div>')
   
   // 词性标注高亮 <形><动><名><代><副><介><连><助><数><量>
   result = result.replace(/<([形动名代副介连助数量]+)>/g, '<span class="pos-ancient">$1</span>')
