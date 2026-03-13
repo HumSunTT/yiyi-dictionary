@@ -52,24 +52,25 @@ fn main() {
                 
                 let handle = app_handle.clone();
                 tauri::async_runtime::spawn(async move {
-                    match get_selected_text_internal(&handle).await {
+                    match get_clipboard_text(&handle).await {
                         Ok(text) if !text.is_empty() => {
-                            log::info!("获取到选中文字: {}", text);
+                            log::info!("获取到剪贴板文字: {}", text);
                             if let Err(e) = handle.emit("selection-translate", &text) {
                                 log::error!("发送事件失败: {}", e);
                             }
                         }
                         Ok(_) => {
-                            log::info!("没有选中文字");
+                            log::info!("剪贴板为空，请先复制文字");
                         }
                         Err(e) => {
-                            log::error!("获取选中文字失败: {}", e);
+                            log::error!("获取剪贴板失败: {}", e);
                         }
                     }
                 });
             })?;
             
             log::info!("全局快捷键注册成功: Ctrl+Shift+T");
+            log::info!("使用方法: 先复制文字(Ctrl+C)，再按 Ctrl+Shift+T 翻译");
             
             Ok(())
         })
@@ -77,56 +78,11 @@ fn main() {
         .expect("error while running tauri application");
 }
 
-async fn get_selected_text_internal(app: &tauri::AppHandle) -> Result<String, String> {
+async fn get_clipboard_text(app: &tauri::AppHandle) -> Result<String, String> {
     use tauri_plugin_clipboard_manager::ClipboardExt;
     
-    let original_clipboard: String = match app.clipboard().read_text() {
-        Ok(text) => text,
-        Err(_) => String::new(),
-    };
+    let text: String = app.clipboard().read_text()
+        .map_err(|e| e.to_string())?;
     
-    simulate_copy();
-    
-    tokio::time::sleep(tokio::time::Duration::from_millis(150)).await;
-    
-    let selected_text: String = match app.clipboard().read_text() {
-        Ok(text) => text,
-        Err(_) => String::new(),
-    };
-    
-    if !original_clipboard.is_empty() && selected_text != original_clipboard {
-        let _ = app.clipboard().write_text(&original_clipboard);
-    }
-    
-    Ok(selected_text.trim().to_string())
-}
-
-#[cfg(target_os = "windows")]
-fn simulate_copy() {
-    use enigo::{Enigo, Key, Keyboard, Settings, Direction};
-    if let Ok(mut enigo) = Enigo::new(&Settings::default()) {
-        let _ = enigo.key(Key::Control, Direction::Press);
-        let _ = enigo.key(Key::Unicode('c'), Direction::Click);
-        let _ = enigo.key(Key::Control, Direction::Release);
-    }
-}
-
-#[cfg(target_os = "macos")]
-fn simulate_copy() {
-    use enigo::{Enigo, Key, Keyboard, Settings, Direction};
-    if let Ok(mut enigo) = Enigo::new(&Settings::default()) {
-        let _ = enigo.key(Key::Meta, Direction::Press);
-        let _ = enigo.key(Key::Unicode('c'), Direction::Click);
-        let _ = enigo.key(Key::Meta, Direction::Release);
-    }
-}
-
-#[cfg(target_os = "linux")]
-fn simulate_copy() {
-    use enigo::{Enigo, Key, Keyboard, Settings, Direction};
-    if let Ok(mut enigo) = Enigo::new(&Settings::default()) {
-        let _ = enigo.key(Key::Control, Direction::Press);
-        let _ = enigo.key(Key::Unicode('c'), Direction::Click);
-        let _ = enigo.key(Key::Control, Direction::Release);
-    }
+    Ok(text.trim().to_string())
 }
