@@ -895,11 +895,9 @@ impl Database {
 
         let (w, pinyin, definition, examples) = result;
 
-        // 解析释义 JSON
         let definitions: Vec<DefinitionItem> =
             serde_json::from_str(&definition).unwrap_or_default();
 
-        // 解析例句 JSON
         let examples: Option<Vec<ExampleItem>> =
             examples.and_then(|e| serde_json::from_str(&e).ok());
 
@@ -911,6 +909,83 @@ impl Database {
             definitions,
             examples,
         })
+    }
+
+    /// 从英汉词典反向查询中文词
+    pub fn query_english_by_chinese(&self, chinese_word: &str) -> Vec<DictionaryResult> {
+        let conn = self.conn.lock().unwrap();
+
+        let mut stmt = match conn.prepare(
+            "SELECT word, phonetic, pos, definition, examples FROM english_dict WHERE definition LIKE ? OR definition LIKE ? LIMIT 5"
+        ) {
+            Ok(s) => s,
+            Err(_) => return Vec::new(),
+        };
+
+        let pattern1 = format!("{}%", chinese_word);
+        let pattern2 = format!("%\n{}%", chinese_word);
+
+        let results: Vec<_> = stmt
+            .query_map(rusqlite::params![&pattern1, &pattern2], |row| {
+                Ok((
+                    row.get::<_, String>(0)?,
+                    row.get::<_, Option<String>>(1)?,
+                    row.get::<_, Option<String>>(2)?,
+                    row.get::<_, String>(3)?,
+                    row.get::<_, Option<String>>(4)?,
+                ))
+            })
+            .ok()
+            .map(|r| r.collect::<Vec<_>>())
+            .unwrap_or_default();
+
+        let mut dictionary_results = Vec::new();
+        let mut seen_definitions = std::collections::HashSet::new();
+
+        for result in results.into_iter().flatten() {
+            let (w, phonetic, pos, definition, examples) = result;
+
+            let first_line = definition
+                .split('\n')
+                .next()
+                .unwrap_or(&definition)
+                .to_string();
+
+            if seen_definitions.contains(&first_line) {
+                continue;
+            }
+            seen_definitions.insert(first_line.clone());
+
+            let definitions: Vec<DefinitionItem> = if let Some(p) = pos {
+                vec![DefinitionItem {
+                    pos: p,
+                    definition: first_line,
+                }]
+            } else {
+                vec![DefinitionItem {
+                    pos: String::new(),
+                    definition: first_line,
+                }]
+            };
+
+            let examples: Option<Vec<ExampleItem>> =
+                examples.and_then(|e| serde_json::from_str(&e).ok());
+
+            dictionary_results.push(DictionaryResult {
+                r#type: "dictionary".to_string(),
+                word: w,
+                phonetic,
+                source: Some("英汉词典".to_string()),
+                definitions,
+                examples,
+            });
+
+            if dictionary_results.len() >= 3 {
+                break;
+            }
+        }
+
+        dictionary_results
     }
 
     /// 添加历史记录

@@ -111,6 +111,14 @@ pub async fn translate_text(text: String, source_lang: String, state: State<'_, 
                         sources.push("中英词典".to_string());
                     }
                     
+                    let english_results = db.query_english_by_chinese(&text);
+                    if !english_results.is_empty() {
+                        for eng in &english_results {
+                            sections.push(format!("【英汉词典-{}】\n{}", eng.word, format_dict_to_translation(eng)));
+                        }
+                        sources.push("英汉词典".to_string());
+                    }
+                    
                     if let Ok(ancient_results) = db.query_ancient_all(&text) {
                         if !ancient_results.is_empty() {
                             let ancient_text = format_multiple_dicts_to_translation(&ancient_results);
