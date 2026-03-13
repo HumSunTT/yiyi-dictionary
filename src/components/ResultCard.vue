@@ -128,22 +128,16 @@ function formatTranslation(text: string): string {
     .replace(/\r\n/g, '\n')
     .replace(/\r/g, '\n')
   
-  // 字典来源标签高亮
-  result = result.replace(/【(古汉语常用字字典|古汉语词典|康熙字典|中英词典|相关短语)】/g, '<div class="dict-source">$1</div>')
+  result = result.replace(/【(古汉语常用字字典|古汉语词典|康熙字典|中英词典|英汉词典|相关短语)】/g, '<div class="dict-source">$1</div>')
   
-  // 例句标签
   result = result.replace(/【例句】/g, '<div class="example-label">例句</div>')
   
-  // 词性标注高亮 <形><动><名><代><副><介><连><助><数><量>
   result = result.replace(/<([形动名代副介连助数量]+)>/g, '<span class="pos-ancient">$1</span>')
   
-  // 例句项目符号
   result = result.replace(/• /g, '<span class="bullet">•</span> ')
   
-  // 书名号高亮
   result = result.replace(/《([^》]+)》/g, '<span class="book-title">《$1》</span>')
   
-  // 换行处理
   result = result.replace(/\n/g, '<br/>')
   
   return result
