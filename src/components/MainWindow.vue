@@ -207,9 +207,6 @@ async function handleAddToVocabulary() {
   padding: 16px;
   overflow-y: auto;
   background-color: #f8fafc;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
 }
 
 .input-card {

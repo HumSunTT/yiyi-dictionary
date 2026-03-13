@@ -2,7 +2,7 @@
   <div class="result-card">
     <!-- 翻译结果 -->
     <div v-if="result.type === 'translation'" class="translation-container">
-      <!-- 上半部分：中英词典 + 相关短语（左右两栏） -->
+      <!-- 第一行：中英词典 + 相关短语 -->
       <div class="top-section" v-if="hasDictOrPhrases">
         <div class="left-column">
           <template v-for="(section, index) in parsedSections" :key="index">
@@ -15,7 +15,7 @@
         
         <div class="right-column">
           <template v-for="(section, index) in parsedSections" :key="'phrase-'+index">
-            <div v-if="section.type === 'phrases'" class="dict-section phrase-section">
+            <div v-if="section.type === 'phrases'" class="dict-section">
               <div class="dict-title">相关短语</div>
               <div class="phrase-list">
                 <div v-for="(phrase, pIndex) in section.phrases" :key="pIndex" class="phrase-item">
@@ -28,17 +28,29 @@
         </div>
       </div>
       
-      <!-- 下半部分：古汉语字典 -->
-      <div class="ancient-sections">
-        <template v-for="(section, index) in parsedSections" :key="'ancient-'+index">
-          <div v-if="section.type === 'ancient'" class="dict-section ancient-section">
-            <div class="dict-title">{{ section.title }}</div>
-            <div class="ancient-content">
-              <div class="ancient-defs" v-html="formatAncientDefs(section.definitions || '')"></div>
-              <div class="ancient-examples" v-html="formatAncientExamples(section.examples || '')"></div>
-            </div>
+      <!-- 古汉语常用字字典（全宽） -->
+      <div v-if="commonDictSection" class="dict-section ancient-common">
+        <div class="dict-title">{{ commonDictSection.title }}</div>
+        <div class="ancient-content">
+          <div class="ancient-defs" v-html="formatAncientDefs(commonDictSection.definitions || '')"></div>
+          <div class="ancient-examples" v-html="formatAncientExamples(commonDictSection.examples || '')"></div>
+        </div>
+      </div>
+      
+      <!-- 古汉语词典 + 康熙字典（左右并排） -->
+      <div class="bottom-dicts" v-if="hasOtherAncient">
+        <div class="left-column">
+          <div v-if="ancientDictSection" class="dict-section ancient-side">
+            <div class="dict-title">{{ ancientDictSection.title }}</div>
+            <div class="ancient-simple" v-html="formatSimpleAncient(ancientDictSection.content || '')"></div>
           </div>
-        </template>
+        </div>
+        <div class="right-column">
+          <div v-if="kangxiSection" class="dict-section kangxi-section">
+            <div class="dict-title">{{ kangxiSection.title }}</div>
+            <div class="kangxi-content" v-html="formatKangxi(kangxiSection.content || '')"></div>
+          </div>
+        </div>
       </div>
     </div>
     
@@ -95,7 +107,7 @@ const emit = defineEmits<{
 const message = useMessage()
 
 interface ParsedSection {
-  type: 'chinese-english' | 'english-chinese' | 'phrases' | 'ancient'
+  type: 'chinese-english' | 'english-chinese' | 'phrases' | 'ancient-common' | 'ancient' | 'kangxi'
   title: string
   content?: string
   phrases?: { word: string; meaning: string }[]
@@ -128,14 +140,18 @@ const parsedSections = computed(() => {
         return { word: parts[0] || '', meaning: parts[1] || '' }
       })
       sections.push({ type: 'phrases', title: '相关短语', phrases })
-    } else if (title === '古汉语词典' || title === '古汉语常用字字典' || title === '康熙字典') {
+    } else if (title === '古汉语常用字字典') {
       const { defs, examples } = parseAncientContent(content)
       sections.push({ 
-        type: 'ancient', 
+        type: 'ancient-common', 
         title, 
         definitions: defs,
         examples: examples
       })
+    } else if (title === '古汉语词典') {
+      sections.push({ type: 'ancient', title, content })
+    } else if (title === '康熙字典') {
+      sections.push({ type: 'kangxi', title, content })
     }
   }
   
@@ -148,6 +164,22 @@ const hasDictOrPhrases = computed(() => {
     s.type === 'english-chinese' || 
     s.type === 'phrases'
   )
+})
+
+const commonDictSection = computed(() => {
+  return parsedSections.value.find(s => s.type === 'ancient-common')
+})
+
+const ancientDictSection = computed(() => {
+  return parsedSections.value.find(s => s.type === 'ancient')
+})
+
+const kangxiSection = computed(() => {
+  return parsedSections.value.find(s => s.type === 'kangxi')
+})
+
+const hasOtherAncient = computed(() => {
+  return ancientDictSection.value || kangxiSection.value
 })
 
 function parseAncientContent(content: string) {
@@ -207,6 +239,34 @@ function formatAncientExamples(examples: string): string {
     .join('')
 }
 
+function formatSimpleAncient(content: string): string {
+  if (!content) return ''
+  return content
+    .split('\n')
+    .filter(l => l.trim())
+    .map(line => '<div class="simple-line">' + line + '</div>')
+    .join('')
+}
+
+function formatKangxi(content: string): string {
+  if (!content) return ''
+  let formatted = content
+    .replace(/\\n/g, '\n')
+    .split('\n')
+    .filter(l => l.trim())
+    .map(line => {
+      let f = line
+        .replace(/〔古文〕/g, '<span class="kangxi-tag">〔古文〕</span>')
+        .replace(/又/g, '</div><div class="kangxi-item"><span class="kangxi-sep">又</span> ')
+        .replace(/《([^》]+)》/g, '<span class="book">《$1》</span>')
+        .replace(/([①②③④⑤⑥⑦⑧⑨⑩])/g, '<span class="num">$1</span>')
+      return f
+    })
+    .join('</div><div class="kangxi-item">')
+  
+  return '<div class="kangxi-item">' + formatted + '</div>'
+}
+
 function handleAddToVocabulary() {
   emit('add-to-vocabulary')
   message.success('已添加到生词本')
@@ -240,7 +300,10 @@ function handleCopy() {
   min-width: 0;
 }
 
-.ancient-sections {
+.bottom-dicts {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
   margin-top: 20px;
 }
 
@@ -268,41 +331,34 @@ function handleCopy() {
   padding: 4px 0;
 }
 
-.phrase-section {
-  background: #f8fafc;
-  border-radius: 8px;
-  padding: 12px;
-}
-
+/* 相关短语 */
 .phrase-list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
 .phrase-item {
   display: flex;
   gap: 8px;
-  padding: 6px 8px;
-  background: #fff;
-  border-radius: 6px;
-  border-left: 3px solid #8b5cf6;
+  font-size: 13px;
+  line-height: 1.6;
 }
 
 .phrase-word {
   color: #6366f1;
-  min-width: 100px;
 }
 
 .phrase-meaning {
   color: #6b7280;
-  font-size: 13px;
 }
 
-.ancient-section {
+/* 古汉语常用字字典 */
+.ancient-common {
   background: #fafafa;
   border-radius: 8px;
   padding: 12px;
+  margin-top: 20px;
 }
 
 .ancient-content {
@@ -316,6 +372,35 @@ function handleCopy() {
   line-height: 1.8;
 }
 
+.ancient-defs :deep(.num) {
+  display: inline-block;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  color: #fff;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  text-align: center;
+  line-height: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  margin-right: 6px;
+}
+
+.ancient-defs :deep(.pos-tag) {
+  background: #fef3c7;
+  color: #92400e;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  margin: 0 2px;
+}
+
+.ancient-defs :deep(.book) {
+  color: #6366f1;
+  font-weight: 600;
+}
+
 .ancient-examples {
   font-size: 13px;
   line-height: 1.7;
@@ -325,6 +410,98 @@ function handleCopy() {
   border-radius: 6px;
 }
 
+.ancient-examples :deep(.bullet) {
+  color: #8b5cf6;
+  font-weight: bold;
+  margin-right: 4px;
+}
+
+.ancient-examples :deep(.book) {
+  color: #6366f1;
+}
+
+/* 古汉语词典（简化显示） */
+.ancient-side {
+  background: #fafafa;
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.ancient-simple {
+  font-size: 14px;
+  line-height: 1.8;
+  color: #374151;
+}
+
+.simple-line {
+  padding: 2px 0;
+}
+
+/* 康熙字典 */
+.kangxi-section {
+  background: #fafafa;
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.kangxi-content {
+  font-size: 13px;
+  line-height: 1.8;
+  color: #374151;
+}
+
+.kangxi-content :deep(.kangxi-item) {
+  margin-bottom: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px dashed #e5e7eb;
+}
+
+.kangxi-content :deep(.kangxi-item:last-child) {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+.kangxi-content :deep(.kangxi-tag) {
+  background: #fef3c7;
+  color: #92400e;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 12px;
+}
+
+.kangxi-content :deep(.kangxi-sep) {
+  display: inline-block;
+  background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+  color: #1e40af;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 12px;
+  margin-right: 4px;
+}
+
+.kangxi-content :deep(.book) {
+  color: #6366f1;
+  font-weight: 600;
+}
+
+.kangxi-content :deep(.num) {
+  display: inline-block;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  color: #fff;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  text-align: center;
+  line-height: 18px;
+  font-size: 11px;
+  font-weight: 600;
+  margin-right: 4px;
+}
+
+/* 词库结果 */
 .dict-result {
   padding: 8px;
 }
