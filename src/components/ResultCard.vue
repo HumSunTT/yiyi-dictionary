@@ -355,6 +355,22 @@ function handleCopy() {
   background: linear-gradient(135deg, #f5f3ff, #faf5ff);
   border-radius: 10px;
   border-left: 4px solid #8b5cf6;
+  column-count: 1;
+}
+
+@media (min-width: 900px) {
+  .ai-result .translation {
+    column-count: 2;
+    column-gap: 30px;
+  }
+  
+  .translation :deep(.dict-source) {
+    column-span: all;
+  }
+  
+  .translation :deep(.example-label) {
+    column-span: all;
+  }
 }
 
 .translation :deep(.tag) {

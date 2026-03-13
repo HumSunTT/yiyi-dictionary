@@ -207,6 +207,9 @@ async function handleAddToVocabulary() {
   padding: 16px;
   overflow-y: auto;
   background-color: #f8fafc;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .input-card {
@@ -214,6 +217,8 @@ async function handleAddToVocabulary() {
   background-color: #fff;
   border-radius: 12px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  width: 100%;
+  max-width: 900px;
 }
 
 .input-actions {
@@ -242,9 +247,13 @@ async function handleAddToVocabulary() {
   background-color: #fff;
   border-radius: 12px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  width: 100%;
+  max-width: 900px;
 }
 
 .empty-state {
   margin-top: 60px;
+  width: 100%;
+  max-width: 900px;
 }
 </style>
