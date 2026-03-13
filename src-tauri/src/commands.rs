@@ -49,7 +49,6 @@ pub async fn query_word_multi(word: String, dict_type: String, state: State<'_, 
             }
         },
         _ => {
-            // 按优先级查询：古汉语 -> 中文 -> 英语
             let mut results = Vec::new();
             if let Some(r) = db.query_ancient(&word) {
                 results.push(r);
@@ -64,7 +63,6 @@ pub async fn query_word_multi(word: String, dict_type: String, state: State<'_, 
         }
     };
     
-    // 记录历史（只记录第一个结果 to avoid duplication）
     if !results.is_empty() {
         let first_result = &results[0];
         let result_json = serde_json::to_string(first_result).unwrap_or_default();
@@ -85,12 +83,10 @@ pub async fn query_word(word: String, dict_type: String, state: State<'_, AppSta
         "english" => db.query_english(&word),
         "chinese" => db.query_chinese(&word),
         _ => {
-            // 按优先级查询：古汉语 -> 中文 -> 英语
             db.query_ancient(&word).or_else(|| db.query_chinese(&word)).or_else(|| db.query_english(&word))
         }
     };
     
-    // 记录历史
     if let Some(ref r) = result {
         let result_json = serde_json::to_string(r).unwrap_or_default();
         let _ = db.add_history(&word, &dict_type, &result_json, "local");
@@ -107,58 +103,84 @@ pub async fn translate_text(text: String, source_lang: String, state: State<'_, 
         if let Some(db) = db_guard.as_ref() {
             match source_lang.as_str() {
                 "ancient" => {
-                    match db.query_ancient_all(&text) {
-                        Ok(results) if !results.is_empty() => {
-                            let mut translation = format_multiple_dicts_to_translation(&results);
-                            let mut sources: Vec<String> = results.iter()
-                                .filter_map(|r| r.source.clone())
-                                .collect();
-                            
-                            if let Some(english) = db.query_chinese(&text) {
-                                translation.push_str("\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n");
-                                translation.push_str("【中英词典】\n");
-                                translation.push_str(&format_dict_to_translation(&english));
-                                sources.push("中英词典".to_string());
+                    let mut sections: Vec<String> = Vec::new();
+                    let mut sources: Vec<String> = Vec::new();
+                    
+                    if let Some(chinese) = db.query_chinese(&text) {
+                        sections.push(format!("【中英词典】\n{}", format_dict_to_translation(&chinese)));
+                        sources.push("中英词典".to_string());
+                    }
+                    
+                    if let Ok(ancient_results) = db.query_ancient_all(&text) {
+                        if !ancient_results.is_empty() {
+                            let ancient_text = format_multiple_dicts_to_translation(&ancient_results);
+                            sections.push(ancient_text);
+                            for r in &ancient_results {
+                                if let Some(s) = &r.source {
+                                    sources.push(s.clone());
+                                }
                             }
-                            
-                            let result = TranslationResult {
-                                r#type: "translation".to_string(),
-                                original: text.clone(),
-                                translation,
-                                notes: Some(vec![format!("来源：{}", sources.join("、"))]),
-                            };
-                            let result_json = serde_json::to_string(&result).unwrap_or_default();
-                            let _ = db.add_history(&text, &source_lang, &result_json, "local");
-                            Some(result)
-                        }
-                        _ => {
-                            db.query_chinese(&text).map(|dict| {
-                                let result = TranslationResult {
-                                    r#type: "translation".to_string(),
-                                    original: text.clone(),
-                                    translation: format_dict_to_translation(&dict),
-                                    notes: Some(vec!["来源：中英词典".to_string()]),
-                                };
-                                let result_json = serde_json::to_string(&result).unwrap_or_default();
-                                let _ = db.add_history(&text, &source_lang, &result_json, "local");
-                                result
-                            })
                         }
                     }
-                }
-                "english" => {
-                    db.query_english(&text).map(|dict| {
-                        let translation = format_dict_to_translation(&dict);
+                    
+                    if !sections.is_empty() {
+                        let translation = sections.join("\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n");
                         let result = TranslationResult {
                             r#type: "translation".to_string(),
                             original: text.clone(),
                             translation,
-                            notes: Some(vec![format!("来源：{}", dict.source.unwrap_or_else(|| "英汉词典".to_string()))]),
+                            notes: Some(vec![format!("来源：{}", sources.join("、"))]),
                         };
                         let result_json = serde_json::to_string(&result).unwrap_or_default();
                         let _ = db.add_history(&text, &source_lang, &result_json, "local");
-                        result
-                    })
+                        Some(result)
+                    } else {
+                        None
+                    }
+                }
+                "english" => {
+                    let mut sections: Vec<String> = Vec::new();
+                    let mut sources: Vec<String> = Vec::new();
+                    
+                    if let Some(english) = db.query_english(&text) {
+                        sections.push(format!("【英汉词典】\n{}", format_dict_to_translation(&english)));
+                        sources.push("英汉词典".to_string());
+                        
+                        if !english.definitions.is_empty() {
+                        for def in &english.definitions {
+                                let chinese_words = extract_chinese_words(&def.definition);
+                                for word in chinese_words {
+                                    if let Ok(ancient_results) = db.query_ancient_all(&word) {
+                                        if !ancient_results.is_empty() {
+                                            let ancient_text = format_multiple_dicts_to_translation(&ancient_results);
+                                            sections.push(ancient_text);
+                                            for r in &ancient_results {
+                                                if let Some(s) = &r.source {
+                                                    sources.push(format!("{}（via 英汉）", s));
+                                                }
+                                            }
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    
+                    if !sections.is_empty() {
+                        let translation = sections.join("\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n");
+                        let result = TranslationResult {
+                            r#type: "translation".to_string(),
+                            original: text.clone(),
+                            translation,
+                            notes: Some(vec![format!("来源：{}", sources.join("、"))]),
+                        };
+                        let result_json = serde_json::to_string(&result).unwrap_or_default();
+                        let _ = db.add_history(&text, &source_lang, &result_json, "local");
+                        Some(result)
+                    } else {
+                        None
+                    }
                 }
                 "chinese" => {
                     db.query_chinese(&text).map(|dict| {
@@ -293,6 +315,31 @@ fn format_dict_to_translation(dict: &DictionaryResult) -> String {
     lines.join("\n")
 }
 
+/// 从文本中提取中文词汇
+fn extract_chinese_words(text: &str) -> Vec<String> {
+    let mut words = Vec::new();
+    let chars: Vec<char> = text.chars().collect();
+    let mut i = 0;
+    
+    while i < chars.len() {
+        if chars[i] >= '\u{4e00}' && chars[i] <= '\u{9fff}' {
+            let start = i;
+            while i < chars.len() && chars[i] >= '\u{4e00}' && chars[i] <= '\u{9fff}' {
+                i += 1;
+            }
+            let word: String = chars[start..i].iter().collect();
+            if word.chars().count() >= 1 && word.chars().count() <= 4 {
+                words.push(word);
+            }
+        } else {
+            i += 1;
+        }
+    }
+    
+    words.sort_by(|a, b| a.chars().count().cmp(&b.chars().count()));
+    words
+}
+
 /// 获取历史记录
 #[tauri::command]
 pub async fn get_history(limit: i32, state: State<'_, AppState>) -> Result<Vec<HistoryItem>, String> {
@@ -317,7 +364,6 @@ pub async fn add_to_vocabulary(word: String, word_type: String, definition: Stri
     let db_guard = state.db.lock().unwrap();
     let db = db_guard.as_ref().ok_or("数据库未初始化")?;
     
-    // 检查是否已存在
     if db.vocabulary_exists(&word) {
         return Err("该词已在生词本中".to_string());
     }
@@ -359,7 +405,6 @@ pub async fn save_settings(settings: AppSettings, state: State<'_, AppState>) ->
     let mut current = state.settings.lock().unwrap();
     *current = settings.clone();
     
-    // 更新 API 客户端
     let mut client = state.api_client.lock().unwrap();
     client.update_settings(settings);
     
@@ -381,16 +426,12 @@ pub fn detect_language(text: String) -> String {
     if has_ascii_only && has_ascii {
         "english".to_string()
     } else if has_chinese {
-        // 如果只包含中文字符（可能是单个或多个），优先检查是否为古文
         let non_chinese_chars: Vec<char> = trimmed.chars().filter(|c| !(*c >= '\u{4e00}' && *c <= '\u{9fff}') && !c.is_whitespace()).collect();
         
         if non_chinese_chars.is_empty() {
-            // 纯中文文本
             if trimmed.chars().count() == 1 {
-                // 单个中文字符，很可能是古文
                 "ancient".to_string()
             } else {
-                // 多个中文字符，检查是否包含古文特征字
                 let ancient_chars = ["之", "乎", "者", "也", "矣", "焉", "哉", "曰", "于", "以", "而", "吾", "汝", "何", "乃", "若", "则", "虽", "故", "既", "且", "遂", "盖", "然", "或", "学", "哀"];
                 let is_ancient = ancient_chars.iter().any(|&c| trimmed.contains(c));
                 if is_ancient {
@@ -400,7 +441,6 @@ pub fn detect_language(text: String) -> String {
                 }
             }
         } else {
-            // 包含非中文字符，可能是混合内容
             "chinese".to_string()
         }
     } else {
