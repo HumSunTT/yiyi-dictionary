@@ -403,7 +403,7 @@ fn format_english_phrase(dict: &DictionaryResult) -> String {
         })
         .unwrap_or_default();
     
-    format!("{} {}", word, meaning)
+    format!("{}：{}", word, meaning)
 }
 
 /// 从文本中提取中文词汇

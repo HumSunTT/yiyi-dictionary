@@ -8,7 +8,7 @@
           <template v-for="(section, index) in parsedSections" :key="index">
             <div v-if="section.type === 'chinese-english' || section.type === 'english-chinese'" class="dict-section">
               <div class="dict-title">{{ section.title }}</div>
-              <div class="dict-content" v-html="formatContent(section.content || '')"></div>
+              <div class="dict-content" v-html="formatDictContent(section.content || '')"></div>
             </div>
           </template>
         </div>
@@ -136,6 +136,10 @@ const parsedSections = computed(() => {
     } else if (title === '相关短语') {
       const lines = content.split('\n').filter(l => l.trim())
       const phrases = lines.map(line => {
+        const colonIndex = line.indexOf('：')
+        if (colonIndex > 0) {
+          return { word: line.substring(0, colonIndex), meaning: line.substring(colonIndex + 1) }
+        }
         const parts = line.split(/\s+/, 2)
         return { word: parts[0] || '', meaning: parts[1] || '' }
       })
@@ -208,6 +212,39 @@ function formatContent(content: string): string {
     .filter(l => l.trim())
     .map(line => '<div class="content-line">' + line + '</div>')
     .join('')
+}
+
+function formatDictContent(content: string): string {
+  const lines = content.split('\n').filter(l => l.trim())
+  const defLines: string[] = []
+  const exampleLines: string[] = []
+  let inExample = false
+  
+  for (const line of lines) {
+    if (line.includes('例句')) {
+      inExample = true
+      continue
+    }
+    if (inExample) {
+      exampleLines.push(line)
+    } else {
+      defLines.push(line)
+    }
+  }
+  
+  let html = ''
+  if (defLines.length > 0) {
+    html += '<div class="dict-defs">' + defLines.map(l => '<div class="def-line">' + l + '</div>').join('') + '</div>'
+  }
+  if (exampleLines.length > 0) {
+    html += '<div class="dict-examples">' + exampleLines.map(l => {
+      let formatted = l
+        .replace(/•/g, '<span class="bullet">•</span>')
+        .replace(/——/g, '<span class="sep">——</span>')
+      return '<div class="example-line">' + formatted + '</div>'
+    }).join('') + '</div>'
+  }
+  return html
 }
 
 function formatAncientDefs(defs: string): string {
@@ -325,6 +362,39 @@ function handleCopy() {
   font-size: 14px;
   line-height: 1.8;
   color: #374151;
+}
+
+.dict-defs {
+  margin-bottom: 12px;
+}
+
+.def-line {
+  padding: 4px 0;
+}
+
+.dict-examples {
+  background: #f3f4f6;
+  padding: 10px;
+  border-radius: 6px;
+  margin-top: 8px;
+}
+
+.dict-examples .example-line {
+  font-size: 13px;
+  color: #6b7280;
+  line-height: 1.7;
+  padding: 2px 0;
+}
+
+.dict-examples .bullet {
+  color: #8b5cf6;
+  font-weight: bold;
+  margin-right: 4px;
+}
+
+.dict-examples .sep {
+  color: #9ca3af;
+  margin: 0 4px;
 }
 
 .content-line {
