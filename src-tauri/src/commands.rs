@@ -193,18 +193,50 @@ if !sections.is_empty() {
                     }
                 }
                 "chinese" => {
-                    db.query_chinese(&text).map(|dict| {
-                        let translation = format_dict_to_translation(&dict);
+                    let mut sections: Vec<String> = Vec::new();
+                    let mut sources: Vec<String> = Vec::new();
+                    
+                    if let Some(chinese) = db.query_chinese(&text) {
+                        sections.push(format!("【中英词典】{}", format_chinese_to_english(&chinese)));
+                        sources.push("中英词典".to_string());
+                    }
+                    
+                    let english_results = db.query_english_by_chinese(&text);
+                    if !english_results.is_empty() {
+                        let mut phrases: Vec<String> = Vec::new();
+                        for eng in &english_results {
+                            phrases.push(format_english_phrase(eng));
+                        }
+                        sections.push(format!("【相关短语】{}", phrases.join("\n")));
+                        sources.push("英汉词典".to_string());
+                    }
+                    
+                    if let Ok(ancient_results) = db.query_ancient_all(&text) {
+                        if !ancient_results.is_empty() {
+                            let ancient_text = format_multiple_dicts_to_translation(&ancient_results);
+                            sections.push(ancient_text);
+                            for r in &ancient_results {
+                                if let Some(s) = &r.source {
+                                    sources.push(s.clone());
+                                }
+                            }
+                        }
+                    }
+                    
+                    if !sections.is_empty() {
+                        let translation = sections.join("\n\n");
                         let result = TranslationResult {
                             r#type: "translation".to_string(),
                             original: text.clone(),
                             translation,
-                            notes: Some(vec![format!("来源：{}", dict.source.unwrap_or_else(|| "中英词典".to_string()))]),
+                            notes: Some(vec![format!("来源：{}", sources.join("、"))]),
                         };
                         let result_json = serde_json::to_string(&result).unwrap_or_default();
                         let _ = db.add_history(&text, &source_lang, &result_json, "local");
-                        result
-                    })
+                        Some(result)
+                    } else {
+                        None
+                    }
                 }
                 _ => {
                     let dict_result = db.query_ancient(&text)
