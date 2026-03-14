@@ -3,14 +3,10 @@
     <n-global-style />
     <n-message-provider>
       <n-dialog-provider>
-        <!-- 主窗口 -->
-        <MainWindow v-if="!showFloatWindow" @show-float="showFloat" />
-        
-        <!-- 悬浮窗 -->
-        <FloatWindow 
-          v-if="showFloatWindow" 
-          :result="floatResult"
-          @close="closeFloatWindow" 
+        <MainWindow 
+          ref="mainWindowRef"
+          :external-result="externalResult"
+          @clear-external="externalResult = null"
         />
       </n-dialog-provider>
     </n-message-provider>
@@ -22,7 +18,6 @@ import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { NConfigProvider, NMessageProvider, NDialogProvider, NGlobalStyle, darkTheme, zhCN, dateZhCN } from 'naive-ui'
 import { listen } from '@tauri-apps/api/event'
 import MainWindow from './components/MainWindow.vue'
-import FloatWindow from './components/FloatWindow.vue'
 import { useSettingsStore } from './stores/settings'
 import { useDictionaryStore } from './stores/dictionary'
 import type { DictionaryResult, TranslationResult } from './types'
@@ -30,12 +25,12 @@ import type { DictionaryResult, TranslationResult } from './types'
 const settingsStore = useSettingsStore()
 const dictionaryStore = useDictionaryStore()
 
+const mainWindowRef = ref<InstanceType<typeof MainWindow> | null>(null)
+const externalResult = ref<TranslationResult | null>(null)
+
 const theme = computed(() => {
   return settingsStore.theme === 'dark' ? darkTheme : null
 })
-
-const showFloatWindow = ref(false)
-const floatResult = ref<DictionaryResult | TranslationResult | null>(null)
 
 let clipboardCheckInterval: ReturnType<typeof setInterval> | null = null
 let lastClipboardText = ''
@@ -50,21 +45,15 @@ watch(() => settingsStore.theme, (newTheme) => {
   }
 }, { immediate: true })
 
-async function showFloat(text: string) {
+async function handleSelectionTranslate(text: string) {
   if (!text.trim()) return
   
   try {
     const result = await dictionaryStore.smartQuery(text)
-    floatResult.value = result
-    showFloatWindow.value = true
+    externalResult.value = result
   } catch (error) {
     console.error('查询失败:', error)
   }
-}
-
-function closeFloatWindow() {
-  showFloatWindow.value = false
-  floatResult.value = null
 }
 
 async function checkClipboard() {
@@ -76,7 +65,7 @@ async function checkClipboard() {
       isProcessingClipboard = true
       lastClipboardText = text
       
-      await showFloat(text)
+      await handleSelectionTranslate(text)
       
       setTimeout(() => {
         isProcessingClipboard = false
@@ -109,7 +98,7 @@ onMounted(async () => {
   unlistenSelection = await listen<string>('selection-translate', async (event) => {
     const text = event.payload
     if (text && text.trim()) {
-      await showFloat(text)
+      await handleSelectionTranslate(text)
     }
   })
 })

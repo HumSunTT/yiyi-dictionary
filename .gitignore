@@ -44,4 +44,4 @@ src-tauri/yi_yi.db-wal
 
 # Cache
 .cache/
-.parcel-cache/
+.parcel-cache/dict_data.db

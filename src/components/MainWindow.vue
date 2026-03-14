@@ -80,7 +80,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import {
   NLayout, NLayoutHeader, NLayoutContent,
   NCard, NInput, NButton, NIcon, NDrawer, NDrawerContent, NEmpty, useMessage
@@ -95,12 +95,16 @@ import { useDictionaryStore } from '../stores/dictionary'
 import api from '../stores/api'
 import type { DictionaryResult, TranslationResult } from '../types'
 
-const dictionaryStore = useDictionaryStore()
-const message = useMessage()
+const props = defineProps<{
+  externalResult?: TranslationResult | null
+}>()
 
 const emit = defineEmits<{
-  (e: 'show-float', text: string): void
+  (e: 'clear-external'): void
 }>()
+
+const dictionaryStore = useDictionaryStore()
+const message = useMessage()
 
 const inputText = ref('')
 const result = ref<DictionaryResult | TranslationResult | null>(null)
@@ -109,6 +113,13 @@ const showHistory = ref(false)
 const showVocabulary = ref(false)
 const showSettings = ref(false)
 const showHelp = ref(false)
+
+watch(() => props.externalResult, (newResult) => {
+  if (newResult) {
+    result.value = newResult
+    inputText.value = newResult.original
+  }
+})
 
 function detectLanguage(text: string): 'ancient' | 'english' {
   const trimmed = text.trim()

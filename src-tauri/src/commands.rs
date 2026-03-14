@@ -156,11 +156,12 @@ if !sections.is_empty() {
                         sections.push(format!("【英汉词典】{}", format_dict_to_translation(&english)));
                         sources.push("英汉词典".to_string());
                         
+                        // 从中文释义中提取词汇，查询古汉语
                         if !english.definitions.is_empty() {
                             for def in &english.definitions {
                                 let chinese_words = extract_chinese_words(&def.definition);
-                                for word in chinese_words {
-                                    if let Ok(ancient_results) = db.query_ancient_all(&word) {
+                                for word in &chinese_words {
+                                    if let Ok(ancient_results) = db.query_ancient_all(word) {
                                         if !ancient_results.is_empty() {
                                             let ancient_text = format_multiple_dicts_to_translation(&ancient_results);
                                             sections.push(ancient_text);
@@ -169,12 +170,22 @@ if !sections.is_empty() {
                                                     sources.push(s.clone());
                                                 }
                                             }
-                                            break;
                                         }
                                     }
                                 }
                             }
                         }
+                    }
+                    
+                    // 添加相关短语
+                    let english_results = db.query_english_by_chinese(&text);
+                    if !english_results.is_empty() {
+                        let mut phrases: Vec<String> = Vec::new();
+                        for eng in &english_results {
+                            phrases.push(format_english_phrase(eng));
+                        }
+                        sections.push(format!("【相关短语】\n{}", phrases.join("\n")));
+                        sources.push("英汉词典".to_string());
                     }
                     
                     if !sections.is_empty() {
