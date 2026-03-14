@@ -1,6 +1,6 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
-  "productName": "易译",
+  "productName": "YiYi",
   "version": "0.1.0",
   "identifier": "com.yi-yi.translate",
   "build": {
@@ -29,7 +29,7 @@
   },
   "bundle": {
     "active": true,
-    "targets": "all",
+    "targets": ["nsis"],
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
@@ -42,6 +42,16 @@
     ],
     "category": "Utility",
     "shortDescription": "古文/英语划词翻译助手",
-"longDescription": "一款轻量级桌面翻译工具，支持古文和英语的划词翻译，内置离线词库，联网时可使用AI增强翻译"
+    "longDescription": "一款轻量级桌面翻译工具，支持古文和英语的划词翻译，内置离线词库，联网时可使用AI增强翻译",
+    "windows": {
+      "nsis": {
+        "installerIcon": "icons/icon.ico",
+        "headerImage": "icons/icon.ico",
+        "sidebarImage": "icons/icon.ico",
+        "license": null,
+        "installMode": "currentUser",
+        "languages": ["SimpChinese", "English"]
+      }
+    }
   }
 }
