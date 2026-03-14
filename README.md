@@ -75,11 +75,12 @@
 
 安装包内置示例数据库（仅15个词汇），完整数据库需要手动替换：
 
-1. 下载完整数据库 `yi_yi.db`（约150MB）
-2. 关闭易译应用
-3. 将数据库文件复制到：
+1. 从 [Releases](https://github.com/HumSunTT/yiyi-dictionary/releases) 下载 `yi_yi_db.zip`
+2. 解压得到 `yi_yi.db` 文件
+3. 关闭易译应用
+4. 将数据库文件复制到：
    - **Windows**: `C:\Users\{用户名}\AppData\Roaming\com.yi-yi.translate\yi_yi.db`
-4. 重启应用
+5. 重启应用
 
 完整数据库包含：
 - 古汉语词典：52,783 条
