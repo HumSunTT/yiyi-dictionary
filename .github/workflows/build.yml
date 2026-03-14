@@ -29,6 +29,16 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Delete existing release if exists
+        if: matrix.platform == 'macos-latest' && matrix.args == '--target universal-apple-darwin'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release delete ${{ github.ref_name }} --yes || true
+          git push origin --delete ${{ github.ref_name }} || true
+          git tag ${{ github.ref_name }}
+          git push origin ${{ github.ref_name }}
+
       - name: Install dependencies (Ubuntu only)
         if: matrix.platform == 'ubuntu-22.04'
         run: |
