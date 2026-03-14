@@ -41,16 +41,11 @@
       "dict_data.db"
     ],
     "category": "Utility",
-    "shortDescription": "古文/英语划词翻译助手",
-    "longDescription": "一款轻量级桌面翻译工具，支持古文和英语的划词翻译，内置离线词库，联网时可使用AI增强翻译",
+    "shortDescription": "Ancient Chinese and English dictionary",
+    "longDescription": "A lightweight desktop translation tool for ancient Chinese and English",
     "windows": {
       "nsis": {
-        "installerIcon": "icons/icon.ico",
-        "headerImage": "icons/icon.ico",
-        "sidebarImage": "icons/icon.ico",
-        "license": null,
-        "installMode": "currentUser",
-        "languages": ["SimpChinese", "English"]
+        "installMode": "currentUser"
       }
     }
   }
