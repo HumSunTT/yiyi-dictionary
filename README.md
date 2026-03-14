@@ -5,10 +5,10 @@
 ## 📸 应用截图
 
 <div align="center">
-  <img src="pic/1.png" width="45%" alt="主界面">
-  <img src="pic/2.png" width="45%" alt="古汉语翻译">
-  <img src="pic/3.png" width="45%" alt="英文翻译">
-  <img src="pic/4.png" width="45%" alt="设置页面">
+  <img src="pic/1.png" width="100%" alt="主界面">
+  <img src="pic/2.png" width="100%" alt="古汉语翻译">
+  <img src="pic/3.png" width="100%" alt="英文翻译">
+  <img src="pic/4.png" width="100%" alt="设置页面">
 </div>
 
 ## ✨ 功能特性
